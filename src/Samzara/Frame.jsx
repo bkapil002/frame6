@@ -2,7 +2,6 @@ import { Menu } from "lucide-react";
 import SideBar from "./SideBar";
 import Online from "./Online";
 import Know from "./Know";
-import Donation from './Donate.png';
 import {
   LocalUser,
   RemoteUser,
@@ -19,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { Mic, MicOff } from "lucide-react"; 
+import Audience from "./Audience";
 
 export const Frame = () => {
   const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
@@ -52,11 +52,7 @@ const Basics = () => {
   const [pushedUids, setPushedUids] = useState([]);
   const [pushLoading, setPushLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  
-
   const remoteUsers = useRemoteUsers();
-
-  
 
   useEffect(() => {
     const uids = remoteUsers.map(u => u.uid);
@@ -141,7 +137,7 @@ const Basics = () => {
     return () => clearInterval(interval);
   }, [user]);
 
-  // Push request handler
+
   const handlePushRequest = async () => {
     setPushLoading(true);
     try {
@@ -149,24 +145,12 @@ const Basics = () => {
         headers: { Authorization: `Bearer ${user.token}` }
       });
     } catch (err) {
-      // Already requested or error
+      
     }
     setPushLoading(false);
   };
 
-  // Reset request handler (admin)
-  // const handleResetOwnRequest = async () => {
-  //   setResetLoading(true);
-  //   try {
-  //     await axios.delete('http://localhost:5000/api/agora/unpush-uid', {
-  //       headers: { Authorization: `Bearer ${user.token}` }
-  //     });
-  //     setPushedUids((uids) => uids.filter(uid => uid !== email));
-  //   } catch (err) {
-  //     // handle error
-  //   }
-  //   setResetLoading(false);
-  // };
+
 
 const handleResetOwnRequest = async (uidToRemove) => {
   setResetLoading(true);
@@ -360,12 +344,8 @@ const handleResetOwnRequest = async (uidToRemove) => {
               {user.name}
               
             </p>
-            {/* <span className="absolute top-0 left-0 bg-orange-600 text-white text-xs rounded-full px-1 py-0.8 ">
-          {pushedUids.indexOf(email) + 1}
-        </span> */}
           </div>
         </LocalUser>
-        {/* Show position number */}
         
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
           {micOn ? (
@@ -384,9 +364,6 @@ const handleResetOwnRequest = async (uidToRemove) => {
           <div className="w-full overflow-hidden">
             <p className="bg-gray-700/60 w-full text-white text-xs text-center truncate">
               {names[u.uid] || "Loading..."}
-              {/* <span className="absolute top-0 left-0 bg-orange-500 text-white text-xs rounded-full px-1 py-0.8 ">
-             {pushedUids.indexOf(u.uid) + 1}
-            </span> */}
             {isAdmin &&(
                <button
               onClick={() => handleResetOwnRequest(u.uid)}
@@ -433,48 +410,7 @@ const handleResetOwnRequest = async (uidToRemove) => {
               </div>
             )}
 
-            <div className="flex flex-col p-3 lg:flex-row gap-4 min-h-screen">
-
-              <div className="bg-white space-y-4 rounded-2xl h-60 shadow p-6 w-full max-w-xs mx-auto flex flex-col items-center">
-                <img src={Donation} className="text-5xl mb-4" alt="Donate" />
-                <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-2 rounded-full transition">
-                  Donate
-                </button>
-              </div>
-
-              <div className="flex-1 bg-white rounded-2xl shadow">
-                <div className="border-b px-6 py-4 text-lg font-semibold text-gray-800 flex items-center gap-2">
-                  <span className="text-green-500 text-sm">●</span>
-                  Audience <span className="text-green-600">({normalRemoteUsers.length + (!isAdmin ? 1 : 0)})</span>
-                </div>
-                <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                  {!isAdmin && (
-                    <div key={email} className="text-center">
-                      <img
-                        src={user.imageUrls}
-                        alt={email}
-                        className="w-14 h-14 mx-auto rounded-full object-cover border"
-                      />
-                      <div className="text-sm font-medium mt-2 text-gray-800">{ user.name }</div>
-                    </div>
-                  )}
-                  {normalRemoteUsers.map((remoteUser) =>
-                    remoteUser.uid !== email ? (
-                      <div key={remoteUser.uid} className="text-center">
-                        <img
-                          src={image && image[remoteUser.uid] ? image[remoteUser.uid] : "/default-avatar.png"}
-                          alt={remoteUser.uid}
-                          className="w-14 h-14 mx-auto rounded-full object-cover border"
-                        />
-                        <div className="text-sm font-medium mt-2 text-gray-800">
-                          {names[remoteUser.uid] || "Loading..."}
-                        </div>
-                      </div>
-                    ) : null
-                  )}
-                </div>
-              </div>
-            </div>
+            <Audience normalRemoteUsers={normalRemoteUsers} isAdmin={isAdmin} email={email} user={user} image={image} names={names} />
           </div>
         )}
       </div>
