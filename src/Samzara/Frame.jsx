@@ -1,4 +1,4 @@
-import { Menu } from "lucide-react";
+import { Mic, MicOff,Menu } from "lucide-react";
 import SideBar from "./SideBar";
 import Online from "./Online";
 import Know from "./Know";
@@ -17,7 +17,6 @@ import AgoraRTC, { AgoraRTCProvider } from "agora-rtc-react";
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-import { Mic, MicOff } from "lucide-react";
 import Audience from "./Audience";
 
 export const Frame = () => {
@@ -222,6 +221,34 @@ const Basics = () => {
                   <div className="p-2 text-center">
                     <p className="text-sm text-gray-500">{admin}</p>
                   </div>
+                  {isAdmin ? (
+                      <LocalUser
+                        audioTrack={localMicrophoneTrack}
+                        cameraOn={cameraOn}
+                        micOn={micOn}
+                        playAudio={false}
+                        videoTrack={localCameraTrack}
+                        style={{ borderRadius: '2%' }}
+                      >
+                        <div className="w-full overflow-hidden">
+                          <p className="bg-gray-700/60 w-full text-white text-xl text-center truncate">
+                            {user.name}
+                          </p>
+                        </div>
+                      </LocalUser>
+                    ) : (
+                      adminRemoteUsers.length > 0 ? (
+                        <RemoteUser user={adminRemoteUsers[0]} style={{ borderRadius: '2%' }}>
+                          <div className="w-full overflow-hidden">
+                            <p className="bg-gray-700/60 w-full text-white text-xl text-center truncate">
+                              {names[admin] || "Loading..."}
+                            </p>
+                          </div>
+                        </RemoteUser>
+                      ) : (
+                        <div className="text-center text-gray-400">Admin not connected</div>
+                      )
+                    )}
                 </div>
               </div>
               {/* Center area: Always show admin's video */}
