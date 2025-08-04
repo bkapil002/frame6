@@ -51,6 +51,8 @@ const Basics = () => {
   const [pushedUids, setPushedUids] = useState([]);
   const [pushLoading, setPushLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [promotedUid, setPromotedUid] = useState(null);
+  const [promoteLoading, setPromoteLoading] = useState(false);
   const remoteUsers = useRemoteUsers();
 
   useEffect(() => {
@@ -132,6 +134,26 @@ const Basics = () => {
     return () => clearInterval(interval);
   }, [user]);
 
+
+    useEffect(() => {
+    if (!user || !linkId) return;
+    const fetchPromotedUid = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/agora/promote-uid/${linkId}`, {
+          headers: { Authorization: `Bearer ${user.token}` }
+        });
+        setPromotedUid(res.data.promotedUid);
+      } catch (error) {
+        console.error('Error fetching promoted UID:', error);
+      }
+    };
+    fetchPromotedUid();
+    const interval = setInterval(fetchPromotedUid, 2000);
+    return () => clearInterval(interval);
+  }, [user, linkId]);
+
+
+
   const handlePushRequest = async () => {
     setPushLoading(true);
     try {
@@ -157,6 +179,41 @@ const Basics = () => {
     setResetLoading(false);
   };
 
+
+    const handlePromoteUser = async (uid) => {
+    if (!isAdmin) return;
+    setPromoteLoading(true);
+    try {
+      await axios.post(`http://localhost:5000/api/agora/promote-uid/${linkId}`, 
+        { uid }, 
+        {
+          headers: { Authorization: `Bearer ${user.token}` }
+        }
+      );
+      setPromotedUid(uid);
+    } catch (error) {
+      console.error('Error promoting user:', error);
+    }
+    setPromoteLoading(false);
+  };
+
+  const handleRemovePromotedUser = async () => {
+  if (!isAdmin && promotedUid !== email) return;
+  
+  setPromoteLoading(true);
+  try {
+    await axios.delete(`http://localhost:5000/api/agora/promote-uid/${linkId}`, {
+      headers: { Authorization: `Bearer ${user.token}` }
+    });
+    setPromotedUid(null);
+  } catch (error) {
+    console.error('Error removing promoted user:', error);
+  }
+  setPromoteLoading(false);
+};
+
+
+
   const requestingRemoteUsers = remoteUsers.filter(
     u => pushedUids.includes(u.uid)
   );
@@ -165,6 +222,9 @@ const Basics = () => {
 
   const adminRemoteUsers = remoteUsers.filter(user => user.uid === admin);
   const normalRemoteUsers = remoteUsers.filter(user => user.uid !== admin);
+
+  const promotedUser = promotedUid === email ? null :  remoteUsers.find(user => user.uid === promotedUid);
+
 
   return (
     <div className="h-screen flex overflow-hidden">
@@ -180,7 +240,6 @@ const Basics = () => {
           setResourcesOpen={setResourcesOpen}
         />
       </div>
-      {/* Main Content - Scrollable */}
       <div className="flex-1 flex flex-col overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         <style>
           {`
@@ -221,66 +280,96 @@ const Basics = () => {
                   <div className="p-2 text-center">
                     <p className="text-sm text-gray-500">{admin}</p>
                   </div>
-                  {isAdmin ? (
+                </div>
+                {promotedUid && promotedUid !== admin && (
+                <div> 
+                  
+                   {isAdmin ? (
                       <LocalUser
                         audioTrack={localMicrophoneTrack}
                         cameraOn={cameraOn}
                         micOn={micOn}
                         playAudio={false}
                         videoTrack={localCameraTrack}
-                        style={{ borderRadius: '2%' }}
+                        style={{ borderRadius: '2%'  ,width:'100', height:'100'}}
                       >
-                        <div className="w-full overflow-hidden">
-                          <p className="bg-gray-700/60 w-full text-white text-xl text-center truncate">
-                            {user.name}
-                          </p>
-                        </div>
                       </LocalUser>
                     ) : (
                       adminRemoteUsers.length > 0 ? (
-                        <RemoteUser user={adminRemoteUsers[0]} style={{ borderRadius: '2%' }}>
-                          <div className="w-full overflow-hidden">
-                            <p className="bg-gray-700/60 w-full text-white text-xl text-center truncate">
-                              {names[admin] || "Loading..."}
-                            </p>
-                          </div>
+                        <RemoteUser user={adminRemoteUsers[0]} style={{ borderRadius: '2%'  ,width: '100%', height: '100%'}}>
                         </RemoteUser>
                       ) : (
                         <div className="text-center text-gray-400">Admin not connected</div>
                       )
                     )}
+                  
                 </div>
+                )}
               </div>
-              {/* Center area: Always show admin's video */}
+
               <div className="lg:w-3/5 w-full flex flex-col items-center bg-white shadow rounded-lg p-4">
                 <div className="border rounded-lg w-full max-w-[640px] aspect-video flex justify-center items-center">
                   <div className="rounded-lg w-full h-full object-cover">
-                    {isAdmin ? (
-                      <LocalUser
-                        audioTrack={localMicrophoneTrack}
-                        cameraOn={cameraOn}
-                        micOn={micOn}
-                        playAudio={false}
-                        videoTrack={localCameraTrack}
-                        style={{ borderRadius: '2%' }}
-                      >
-                        <div className="w-full overflow-hidden">
-                          <p className="bg-gray-700/60 w-full text-white text-xl text-center truncate">
-                            {user.name}
-                          </p>
-                        </div>
-                      </LocalUser>
-                    ) : (
-                      adminRemoteUsers.length > 0 ? (
-                        <RemoteUser user={adminRemoteUsers[0]} style={{ borderRadius: '2%' }}>
+                    {promotedUid ? (
+                      promotedUid === email ? (
+                        <LocalUser
+                          audioTrack={localMicrophoneTrack}
+                          cameraOn={cameraOn}
+                          micOn={micOn}
+                          playAudio={true}
+                          videoTrack={localCameraTrack}
+                          style={{ borderRadius: '2%' }}
+                        >
                           <div className="w-full overflow-hidden">
                             <p className="bg-gray-700/60 w-full text-white text-xl text-center truncate">
-                              {names[admin] || "Loading..."}
+                              {user.name} (You)
+                            </p>
+                          </div>
+                        </LocalUser>
+                      ) : promotedUser ? (
+                        <RemoteUser 
+                          user={promotedUser} 
+                          style={{ borderRadius: '2%' }}
+                        >
+                          <div className="w-full overflow-hidden">
+                            <p className="bg-gray-700/60 w-full text-white text-xl text-center truncate">
+                              {names[promotedUid] || "Loading..."}
                             </p>
                           </div>
                         </RemoteUser>
                       ) : (
-                        <div className="text-center text-gray-400">Admin not connected</div>
+                        <div className="flex items-center justify-center h-full text-gray-400">
+                          Promoted user not connected
+                        </div>
+                      )
+                    ) : (
+                      isAdmin ? (
+                        <LocalUser
+                          audioTrack={localMicrophoneTrack}
+                          cameraOn={cameraOn}
+                          micOn={micOn}
+                          playAudio={false}
+                          videoTrack={localCameraTrack}
+                          style={{ borderRadius: '2%' }}
+                        >
+                          <div className="w-full overflow-hidden">
+                            <p className="bg-gray-700/60 w-full text-white text-xl text-center truncate">
+                              {user.name}
+                            </p>
+                          </div>
+                        </LocalUser>
+                      ) : (
+                        adminRemoteUsers.length > 0 ? (
+                          <RemoteUser user={adminRemoteUsers[0]} style={{ borderRadius: '2%' }}>
+                            <div className="w-full overflow-hidden">
+                              <p className="bg-gray-700/60 w-full text-white text-xl text-center truncate">
+                                {names[admin] || "Loading..."}
+                              </p>
+                            </div>
+                          </RemoteUser>
+                        ) : (
+                          <div className="text-center text-gray-400">Admin not connected</div>
+                        )
                       )
                     )}
                   </div>
@@ -332,6 +421,26 @@ const Basics = () => {
                       </button>
                     </>
                   )}
+                  
+                  {isAdmin && promotedUid && (
+                    <button
+                      onClick={handleRemovePromotedUser}
+                      disabled={promoteLoading}
+                      className="bg-red-900 text-white px-3 py-1 text-sm cursor-pointer rounded-lg"
+                    >
+                      {promoteLoading ? "Loading..." : "End Share"}
+                    </button>
+                  )}
+
+                  {!isAdmin && promotedUid === email && (
+                    <button
+                      onClick={handleRemovePromotedUser}
+                      disabled={promoteLoading}
+                      className="bg-red-900 text-white px-3 py-1 text-sm cursor-pointer rounded-lg"
+                    >
+                      {promoteLoading ? "Loading..." : "End Share"}
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="lg:w-1/5 w-full bg-white shadow rounded-lg p-1">
@@ -339,7 +448,6 @@ const Basics = () => {
                   People Requesting to Share
                 </div>
                 <div className="grid grid-cols-4 lg:grid-cols-2 gap-2 mt-2">
-                  {/* Show current user if they are requesting */}
                   {isRequesting && (
                     <div
                       className="w-20 h-20 relative mx-auto rounded-full flex items-center justify-center group cursor-pointer"
@@ -359,7 +467,6 @@ const Basics = () => {
                           </p>
                         </div>
                       </LocalUser>
-
                       <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
                         {micOn ? (
                           <Mic className="text-white w-6 h-6" />
@@ -371,7 +478,9 @@ const Basics = () => {
                   )}
                   {requestingRemoteUsers.map(u => (
                     u.uid !== email &&
-                    <div key={u.uid} className="w-20 h-20 relative mx-auto rounded-full flex items-center justify-center group ">
+                    <div key={u.uid} className="w-20 h-20 relative mx-auto rounded-full flex items-center justify-center cursor-pointer group "
+                    onClick={() => isAdmin && handlePromoteUser(u.uid)}
+                    >
                       <RemoteUser user={u} style={{ width: "100%", height: "100%", borderRadius: "10%" }}>
                         <div className="w-full overflow-hidden">
                           <p className="bg-gray-700/60 w-full text-white text-xs text-center truncate">
