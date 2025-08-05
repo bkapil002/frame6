@@ -98,7 +98,7 @@ router.put('/join-room/:linkId', auth, async (req, res) => {
       rmember,
       agora: {
         appId: agora.appId,
-        channelName: agora.channel, // Keep field names consistent
+        channelName: agora.channel, 
         token: agora.token,
         linkId: agora.linkId,
         uid: rmember,
