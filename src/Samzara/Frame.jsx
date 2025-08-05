@@ -177,22 +177,25 @@ const Basics = () => {
   };
 
   const handlePromoteUser = async (uid) => {
-    
-    setPromoteLoading(true);
-    try {
-      await axios.post(`http://localhost:5000/api/agora/promote-uid/${linkId}`,
-        { uid },
-        {
-          headers: { Authorization: `Bearer ${user.token}` }
-        }
-      );
-      setPromotedUid(uid);
-    } catch (error) {
-      console.error('Error promoting user:', error);
+  setPromoteLoading(true);
+  try { 
+    if (promotedUid) {
+      await handleRemovePromotedUser();
+     
     }
-    setPromoteLoading(false);
-  };
 
+    await axios.post(`http://localhost:5000/api/agora/promote-uid/${linkId}`,
+      { uid },
+      {
+        headers: { Authorization: `Bearer ${user.token}` }
+      }
+    );
+    setPromotedUid(uid);
+  } catch (error) {
+    console.error('Error promoting user:', error);
+  }
+  setPromoteLoading(false);
+};
   const handleRemovePromotedUser = async () => {
     if (!isAdmin && promotedUid !== email) return;
 
@@ -404,7 +407,7 @@ const Basics = () => {
 
                   {!isAdmin && (
                     
-                    <button onClick={async () => { await handleResetOwnRequest(); setCalling(false) }} className="bg-red-600 text-white px-3 py-1 cursor-pointer text-sm rounded-lg">
+                    <button onClick={async () => { await handleResetOwnRequest(); setCalling(false) }} className="bg-blue-900  text-white px-3 py-1 cursor-pointer text-sm rounded-lg">
                       End call
                     </button>
                   )}
@@ -420,7 +423,7 @@ const Basics = () => {
                     <button onClick={() => setCamera(a => !a)} className="bg-blue-900 cursor-pointer text-white px-3 py-1 text-sm rounded-lg">
                       {cameraOn ? <spam className='flex justify-center gap-2 items-center'><Camera/>Camera On</spam> : <spam className='flex justify-center gap-2 items-center'><CameraOff/>Camera off</spam>}
                     </button>
-                      <button onClick={() => setCalling(false)} className="bg-red-600 text-white px-3 py-1 cursor-pointer text-sm rounded-lg">
+                      <button onClick={() => setCalling(false)} className="bg-blue-900  text-white px-3 py-1 cursor-pointer text-sm rounded-lg">
                         End call
                       </button>
                       <button onClick={() => setMic(a => !a)} className="bg-blue-900 text-white px-3 py-1 text-sm cursor-pointer rounded-lg">
@@ -442,7 +445,7 @@ const Basics = () => {
                     <button
                       onClick={handleRemovePromotedUser}
                       disabled={promoteLoading}
-                      className="bg-red-900 text-white px-3 py-1 text-sm cursor-pointer rounded-lg"
+                      className="bg-red-600 text-white px-3 py-1 text-sm cursor-pointer rounded-lg"
                     >
                       {promoteLoading ? "Loading..." : "End Share"}
                     </button>
@@ -458,7 +461,7 @@ const Basics = () => {
                   {isRequesting && (
                     <div
                       className="w-20 h-20 relative mx-auto rounded-full flex items-center justify-center group cursor-pointer"
-                      onClick={() => setMic((prev) => !prev)}
+                      
                     >
                       <LocalUser
                         audioTrack={localMicrophoneTrack}
@@ -478,7 +481,7 @@ const Basics = () => {
                   )}
                   {requestingRemoteUsers.map(u => (
                     u.uid !== email &&
-                    <div key={u.uid} className="w-20 h-20 relative mx-auto rounded-full flex items-center justify-center cursor-pointer group"
+                    <div key={u.uid} className={`w-20 h-20 relative mx-auto rounded-full flex items-center justify-center ${isAdmin?'cursor-pointer':''} group`}
                       onClick={() => isAdmin && handlePromoteUser(u.uid)}
                     >
                       <RemoteUser user={u} style={{ width: "100%", height: "100%", borderRadius: "10%" }}>
