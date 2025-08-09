@@ -2,7 +2,7 @@ const { RtcTokenBuilder, RtcRole } = require('agora-access-token');
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
-const Agora = require('../Modal/Agora');
+const Agora = require('../Modal/Agoraa');
 const PushedUid = require('../Modal/PushedUid');
 const PromotedUid = require('../Modal/PromotedUid');
 
@@ -28,7 +28,12 @@ router.post('/create-room', auth, async (req, res) => {
     if (!appId || !channelName || !appCertificate) {
       return res.status(400).json({ error: 'Missing environment variables' });
     }
+     
+    const { meetingType, meetingDate, meetingTime } = req.body;
 
+     if (!meetingType || !meetingDate || !meetingTime) {
+      return res.status(400).json({ error: 'Meeting type, date, and time are required' });
+    }
     const uid = 0;
     const role = RtcRole.PUBLISHER;
     const expirationTimeInSeconds = 86400; 
@@ -57,6 +62,9 @@ router.post('/create-room', auth, async (req, res) => {
         name: req.user.name,
         imageUrls:req.user.imageUrls
       },
+      meetingType,
+      meetingDate:new Date(meetingDate),
+      meetingTime
     });
 
     return res.status(200).json({
@@ -71,10 +79,95 @@ router.post('/create-room', auth, async (req, res) => {
         name: req.user.name,
         mageUrls:req.user.imageUrls
       },
+      meetingType,
+      meetingDate,
+      meetingTime
     });
   } catch (error) {
     console.error('Token generation failed:', error);
     return res.status(500).json({ error: 'Could not generate token and linkId' });
+  }
+}); 
+
+router.delete('/delete-room/:linkId', auth, async (req, res) => {
+  try {
+    const { linkId } = req.params;
+
+    if (!linkId) {
+      return res.status(400).json({ error: 'Link ID is required' });
+    }
+
+    const room = await Agora.findOne({ linkId });
+
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+
+    if (room.user._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Not authorized to delete this room' });
+    }
+
+    await Agora.deleteOne({ linkId });
+
+    res.status(200).json({ message: 'Room deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting room:', error);
+    res.status(500).json({ error: 'Could not delete room' });
+  }
+});
+
+router.get('/rooms', auth, async (req, res) => {
+  try {
+    const rooms = await Agora.find({ "user._id": req.user._id })
+      .sort({ createdAt: -1 }); 
+
+    res.status(200).json(rooms);
+  } catch (error) {
+    console.error('Error fetching rooms:', error);
+    res.status(500).json({ error: 'Could not fetch rooms' });
+  }
+});
+
+router.get('/meeting-time/:meetingDate', auth, async (req, res) => {
+  try {
+    const { meetingDate } = req.params;
+
+    if (!meetingDate) {
+      return res.status(400).json({ error: 'Meeting date is required' });
+    }
+
+    const startOfDay = new Date(meetingDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(meetingDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const meetings = await Agora.find({
+      meetingDate: { $gte: startOfDay, $lte: endOfDay }
+    }).select('meetingTime -_id');
+
+    const bookedTimes = meetings.map(m => m.meetingTime);
+
+    return res.status(200).json({
+      date: meetingDate,
+      bookedTimes
+    });
+
+  } catch (error) {
+    console.error('Error fetching meeting times:', error);
+    return res.status(500).json({ error: 'Could not fetch meeting times' });
+  }
+});
+
+
+
+router.get('/all-rooms', auth, async (req, res) => {
+  try {
+    const rooms = await Agora.find().sort({ createdAt: -1 }); 
+    res.status(200).json(rooms);
+  } catch (error) {
+    console.error('Error fetching all rooms:', error);
+    res.status(500).json({ error: 'Could not fetch rooms' });
   }
 });
 

@@ -1,5 +1,4 @@
-import { Mic, MicOff,Camera ,CameraOff , Menu } from "lucide-react";
-import SideBar from "./SideBar";
+import { Mic, MicOff,Camera ,CameraOff  } from "lucide-react";
 import Online from "./Online";
 import Know from "./Know";
 import {
@@ -17,7 +16,7 @@ import AgoraRTC, { AgoraRTCProvider } from "agora-rtc-react";
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-import Audience from "./Audience";
+import Donation from './Donate.png'
 
 
 export const Frame = () => {
@@ -32,16 +31,13 @@ export const Frame = () => {
 const Basics = () => {
   const { linkId } = useParams();
   const { user } = useAuth();
-  const [membersOpen, setMembersOpen] = useState(false);
-  const [resourcesOpen, setResourcesOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [calling, setCalling] = useState(false);
   const isConnected = useIsConnected();
   const [appId, setAppId] = useState("");
   const [channel, setChannel] = useState("");
   const [token, setToken] = useState("");
   const [micOn, setMic] = useState(false);
-  const [cameraOn, setCamera] = useState(false);
+  const [cameraOn, setCamera] = useState(true);
   const { localMicrophoneTrack } = useLocalMicrophoneTrack(micOn);
   const { localCameraTrack } = useLocalCameraTrack(cameraOn);
   const [email, setEmail] = useState("");
@@ -216,36 +212,15 @@ const Basics = () => {
 
   const isRequesting = pushedUids.includes(email);
   const isPromoted = promotedUid === email;
+  
   const adminRemoteUsers = remoteUsers.filter(user => user.uid === admin);
   const normalRemoteUsers = remoteUsers.filter(user => user.uid !== admin);
   const promotedUser = promotedUid === email ? null : remoteUsers.find(user => user.uid === promotedUid);
 
   return (
     <div className="h-screen flex overflow-hidden">
-      <div
-        className={`fixed md:static top-0 left-0 h-full shadow-lg w-64 p-4 bg-gray-200 z-50 transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
-      >
-        <SideBar
-          membersOpen={membersOpen}
-          setSidebarOpen={setSidebarOpen}
-          setMembersOpen={setMembersOpen}
-          resourcesOpen={resourcesOpen}
-          setResourcesOpen={setResourcesOpen}
-        />
-      </div>
       <div className="flex-1 flex flex-col overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        <style>
-          {`
-            .overflow-y-auto::-webkit-scrollbar { display: none; }
-            .overflow-y-auto { -ms-overflow-style: none; scrollbar-width: none; }
-          `}
-        </style>
-        <div className="flex items-center justify-between p-4 bg-white shadow md:hidden">
-          <button onClick={() => setSidebarOpen(true)}>
-            <Menu size={24} />
-          </button>
-        </div>
+       
         {!isConnected ? (
           <div className="p-10 max-w-md mx-auto flex flex-col gap-4">
             <button
@@ -519,27 +494,60 @@ const Basics = () => {
         {isConnected && (
           <div>
             <Know />
-            {!isAdmin && cameraOn && (
-              <div
-                className="w-24 h-24 relative mx-auto rounded-full flex items-center justify-center group"
-              >
-                <LocalUser
-                  audioTrack={localMicrophoneTrack}
-                  cameraOn={cameraOn}
-                  micOn={micOn}
-                  playAudio={false}
-                  videoTrack={localCameraTrack}
-                  style={{ width: "100%", height: "100%", borderRadius: "10%" }}
-                >
-                  <div className="w-full overflow-hidden">
-                    <p className="bg-gray-700/60 w-full text-white text-xs text-center truncate">
-                      {user.name}
-                    </p>
-                  </div>
-                </LocalUser>
-              </div>
-            )}
-            <Audience normalRemoteUsers={normalRemoteUsers} isAdmin={isAdmin} email={email} user={user} image={image} names={names} />
+            <div className="flex flex-col p-3 lg:flex-row gap-4 min-h-screen">
+            
+                          <div className="bg-white space-y-4 rounded-2xl h-60 shadow p-6 w-full max-w-xs mx-auto flex flex-col items-center">
+                            <img src={Donation} className="text-5xl mb-4" alt="Donate" />
+                            <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-2 rounded-full transition">
+                              Donate
+                            </button>
+                          </div>
+            
+                          <div className="flex-1 bg-white rounded-2xl shadow">
+                            <div className="border-b px-6 py-4 text-lg font-semibold text-gray-800 flex items-center gap-2">
+                              <span className="text-green-500 text-sm">●</span>
+                              Audience <span className="text-green-600">({normalRemoteUsers.length + (!isAdmin ? 1 : 0)})</span>
+                            </div>
+                            <div className="p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  {!isAdmin && (
+                    <div
+                      className="w-24 h-24 relative mx-auto rounded-full flex items-center justify-center group cursor-pointer"
+
+                    >
+                      <LocalUser
+                        audioTrack={localMicrophoneTrack}
+                        cameraOn={cameraOn}
+                        micOn={micOn}
+                        playAudio={false}
+                        videoTrack={localCameraTrack}
+                        style={{ width: "100%", height: "100%", borderRadius: "10%" }}
+                      >
+                        <div className="w-full overflow-hidden">
+                          <p className="bg-gray-700/60 w-full text-white text-xs text-center truncate">
+                            {user.name}
+                          </p>
+                        </div>
+                      </LocalUser>
+                      
+                    </div>
+                  )}
+                  {/* Show remote normal users */}
+                  {normalRemoteUsers.map((user) => (
+                    user.uid !== email && (
+                      <div key={user.uid} className="w-24 h-24 mx-auto rounded-full object-cover flex items-center justify-center">
+                        <RemoteUser user={user} style={{ width: "100%", height: "100%", borderRadius: "10%" }}>
+                          <div className="w-full overflow-hidden">
+                            <p className="bg-gray-700/60 w-full text-white text-xs text-center truncate">
+                              {names[user.uid] || "Loading..."}
+                            </p>
+                          </div>
+                        </RemoteUser>
+                      </div>
+                    )
+                  ))}
+                </div>
+                          </div>
+                        </div>
           </div>
         )}
       </div>
