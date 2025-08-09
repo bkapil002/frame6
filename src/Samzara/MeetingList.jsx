@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import { CalendarDays } from 'lucide-react';
+import { Link } from "react-router-dom";
 
 const MeetingList = () => {
   const { user } = useAuth();
@@ -24,7 +26,15 @@ const MeetingList = () => {
     return week;
   };
 
-  // Function to convert time string to 24-hour format for sorting
+  const getStartTimeOnly = (timeStr) => {
+    if (!timeStr) return timeStr;
+    // If time contains " - " (duration format), extract only the start time
+    if (timeStr.includes(' - ')) {
+      return timeStr.split(' - ')[0];
+    }
+    return timeStr;
+  };
+
   const convertTo24Hour = (timeStr) => {
     if (!timeStr) return "";
     
@@ -43,7 +53,6 @@ const MeetingList = () => {
     return `${hours.toString().padStart(2, '0')}:${minutes}`;
   };
 
-  // Function to sort times chronologically
   const sortTimes = (times) => {
     return times.sort((a, b) => {
       const timeA = convertTo24Hour(a);
@@ -52,23 +61,21 @@ const MeetingList = () => {
     });
   };
 
-  // Function to check if a meeting is currently live (within 15 minutes of start time)
+
   const isMeetingLive = (meetingTime) => {
     const now = new Date();
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     const meeting24Hour = convertTo24Hour(meetingTime);
     
-    // Parse meeting time
+  
     const [meetingHours, meetingMinutes] = meeting24Hour.split(':').map(Number);
     const meetingTimeInMinutes = meetingHours * 60 + meetingMinutes;
     
-    // Parse current time
     const [currentHours, currentMinutes] = currentTime.split(':').map(Number);
     const currentTimeInMinutes = currentHours * 60 + currentMinutes;
-    
-    // Meeting is live if current time is within 15 minutes after the meeting start time
+   
     return currentTimeInMinutes >= meetingTimeInMinutes && 
-           currentTimeInMinutes <= meetingTimeInMinutes + 15;
+           currentTimeInMinutes <= meetingTimeInMinutes + 57;
   };
 
   // Function to check if a meeting is upcoming (future today)
@@ -109,13 +116,11 @@ const MeetingList = () => {
   const todayLabel = days[0].label;
   const todayDate = days[0].dateOnly;
 
-  // Get today's meetings
   const todayMeetings = rooms.filter(room => {
     const roomDate = new Date(room.meetingDate).toISOString().split("T")[0];
     return roomDate === todayDate;
   });
 
-  // Get upcoming meetings (next 3 future meetings today)
   const upcomingMeetings = todayMeetings
     .filter(room => isMeetingUpcoming(room.meetingTime))
     .sort((a, b) => {
@@ -125,12 +130,10 @@ const MeetingList = () => {
     })
     .slice(0, 3);
 
-  // Get live meetings (currently on air)
   const liveMeetings = todayMeetings
     .filter(room => isMeetingLive(room.meetingTime))
     .slice(0, 1);
 
-  // Group and sort the data for full calendar view
   const groupedData = {};
   rooms.forEach((room) => {
     const dateStr = new Date(room.meetingDate).toISOString().split("T")[0];
@@ -143,31 +146,79 @@ const MeetingList = () => {
     groupedData[room.meetingType][dateStr].push(room.meetingTime);
   });
 
-  // Sort times for each meeting type and date
   Object.keys(groupedData).forEach(meetingType => {
     Object.keys(groupedData[meetingType]).forEach(date => {
       groupedData[meetingType][date] = sortTimes(groupedData[meetingType][date]);
     });
   });
 
+  const getCurrentTimeCustom = () => {
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+  
+  return `${displayHour}:${minutes} ${ampm}`;
+};
+
+ 
+
   return (
-    <>
+    <div className=" mb-4">
       <div className="px-4 pt-2">
         <div className="w-full bg-gradient-to-r from-orange-500 to-orange-300 rounded-md shadow-sm py-5 text-center">
-          <h2 className="text-white text-lg font-semibold">
+          <h2 className="text-white text-xl font-semibold">
             Online Meeting Schedule
           </h2>
+          <div className=" "><p className="text-white text-base font-medium   ">
+            {days[0].label} to {days[6].label}
+          </p></div>
         </div>
       </div>
 
       {/* Upcoming Meetings and On Air Section */}
-      <div className="px-4 pt-4">
+      <div className="px-4 pt-2">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           
           {/* Upcoming Meetings Box */}
-          <div className="bg-white rounded-lg shadow-md border">
-            <div className="bg-blue-500 text-white px-4 py-3 rounded-t-lg">
-              <h3 className="text-lg font-semibold">Upcoming Meetings</h3>
+          <div className="bg-white rounded-lg shadow-md  ">
+            <div className=" text-black px-4 py-3 rounded-t-lg border-b-[1px] border-b-gray-300">
+              <h3 className="text-lg font-semibold">On Air</h3>
+            </div>
+            <div className="p-4">
+              {liveMeetings.length > 0 ? (
+                <div className="space-y-3">
+                  {liveMeetings.map((meeting, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 bg-red-50 rounded-md border-l-4 border-red-400">
+                      <div>
+                        <p className="font-medium text-gray-800">{meeting.meetingType}</p>
+                        <p className="text-base text-gray-600">{meeting.meetingTime}</p>
+                        <div className="flex items-center mt-1">
+                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></div>
+                          <span className="text-xs text-red-600 font-medium">LIVE</span>
+                        </div>
+                      </div>
+                      <Link 
+                        to={`/room/${meeting.linkId}`}
+                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors animate-pulse"
+                      >
+                        Join Live
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No currently live</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md ">
+            <div className=" text-white px-4 py-3 rounded-t-lg border-b-[1px] border-b-gray-300">
+              <h3 className="text-lg text-black font-semibold">Upcoming Meetings</h3>
             </div>
             <div className="p-4">
               {upcomingMeetings.length > 0 ? (
@@ -176,14 +227,14 @@ const MeetingList = () => {
                     <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-md border-l-4 border-blue-400">
                       <div>
                         <p className="font-medium text-gray-800">{meeting.meetingType}</p>
-                        <p className="text-sm text-gray-600">{meeting.meetingTime}</p>
+                        <p className="text-base text-gray-600">{meeting.meetingTime}</p>
                       </div>
-                      <a 
-                        href={`/room/${meeting.linkId}`}
+                      <Link 
+                        to={`/room/${meeting.linkId}`}
                         className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors"
                       >
                         Join
-                      </a>
+                      </Link>
                     </div>
                   ))}
                 </div>
@@ -194,64 +245,37 @@ const MeetingList = () => {
               )}
             </div>
           </div>
-
-          {/* On Air Box */}
-          <div className="bg-white rounded-lg shadow-md border">
-            <div className="bg-red-500 text-white px-4 py-3 rounded-t-lg">
-              <h3 className="text-lg font-semibold">On Air</h3>
-            </div>
-            <div className="p-4">
-              {liveMeetings.length > 0 ? (
-                <div className="space-y-3">
-                  {liveMeetings.map((meeting, index) => (
-                    <div key={index} className="flex justify-between items-center p-3 bg-red-50 rounded-md border-l-4 border-red-400">
-                      <div>
-                        <p className="font-medium text-gray-800">{meeting.meetingType}</p>
-                        <p className="text-sm text-gray-600">{meeting.meetingTime}</p>
-                        <div className="flex items-center mt-1">
-                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></div>
-                          <span className="text-xs text-red-600 font-medium">LIVE</span>
-                        </div>
-                      </div>
-                      <a 
-                        href={`/room/${meeting.linkId}`}
-                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors animate-pulse"
-                      >
-                        Join Live
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <p>No meetings currently live</p>
-                </div>
-              )}
-            </div>
-          </div>
+          
         </div>
       </div>
 
       {/* Full Calendar View */}
-      <div className="px-4 pt-2">
-        <div className="bg-gradient-to-r bg-white rounded-t-lg shadow-sm py-3 text-center">
-          <h2 className="text-black text-3xl font-semibold">Meeting Calendar</h2>
-          <p className="text-black text-sm">
-            {days[0].label} to {days[6].label}
-          </p>
+      <div className="px-4 ">
+        <div className="bg-gradient-to-r bg-white rounded-t-lg shadow-sm py-3  ">
+          <div className=" pl-2"><h2 className="text-black text-3xl flex items-center gap-1 font-semibold"><CalendarDays/> Meeting Calendar</h2></div>
+          <div className="pl-9 -mt-2  flex justify-between">
+             <p className="text-black text-base font-medium pt-3">
+              {days[0].label} to {days[6].label}
+             </p>
+             <div className="mr-4">
+               <p className="text-black text-base font-medium">
+               Your Local Time: {getCurrentTimeCustom()}
+               </p>
+            </div>
+         </div>
         </div>
 
         <div className="overflow-x-auto bg-white shadow rounded-b-lg">
-          <table className="w-full border border-gray-200">
+          <table className="w-full  border border-gray-200">
             <thead>
               <tr className="bg-gray-100">
-                <th className="border border-gray-200 p-2 text-left">
+                <th className="border text-base md:text-lg font-normal border-gray-200 p-2 text-left">
                   Meeting
                 </th>
                 {days.map((day, index) => (
                   <th
                     key={index}
-                    className="border border-gray-200 p-2 text-center"
+                    className="border md:text-lg text-base  font-normal border-gray-200 p-2 text-center"
                   >
                     {day.label}
                   </th>
@@ -259,7 +283,7 @@ const MeetingList = () => {
               </tr>
             </thead>
             <tbody>
-              {Object.keys(groupedData).map((meetingType, rowIndex) => (
+             {Object.keys(groupedData).map((meetingType, rowIndex) => (
                 <tr key={rowIndex} className="hover:bg-gray-50">
                   <td className="border border-gray-200 p-2 font-medium text-gray-700">
                     {meetingType}
@@ -277,7 +301,7 @@ const MeetingList = () => {
                         }`}
                       >
                         {times.length > 0 ? (
-                          times.map((t, i) => <div key={i}>{t}</div>)
+                          times.map((t, i) => <div key={i}>{getStartTimeOnly(t)}</div>)
                         ) : (
                           "-"
                         )}
@@ -290,7 +314,7 @@ const MeetingList = () => {
           </table>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
