@@ -44,7 +44,6 @@ const Basics = () => {
   const [admin, setAdmin] = useState('');
   const [adminImage, setAdminImage] = useState([]);
   const [names, setNames] = useState({});
-  const [image, setImage] = useState({});
   const [pushedUids, setPushedUids] = useState([]);
   const [pushLoading, setPushLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
@@ -57,19 +56,17 @@ const Basics = () => {
     const fetchNames = async () => {
       if (uids.length) {
         const nameMap = {};
-        const imageMap = {};
+
         for (const uid of uids) {
           try {
             const response = await axios.put(`http://localhost:5000/api/users/name/${uid}`);
             nameMap[uid] = response.data.name;
-            imageMap[uid] = response.data.imageUrls;
           } catch (error) {
             nameMap[uid] = "Unknown";
             imageMap[uid] = "";
           }
         }
         setNames(nameMap);
-        setImage(imageMap);
       }
     };
     fetchNames();

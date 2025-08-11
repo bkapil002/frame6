@@ -22,10 +22,9 @@ function generateLinkId() {
 router.post('/create-room', auth, async (req, res) => {
   try {
     const appId = process.env.APP_ID;
-    const channelName = process.env.CHANNEL_NAME; 
     const appCertificate = process.env.APP_CERTIFICATE;
 
-    if (!appId || !channelName || !appCertificate) {
+    if (!appId || !appCertificate) {
       return res.status(400).json({ error: 'Missing environment variables' });
     }
      
@@ -34,9 +33,12 @@ router.post('/create-room', auth, async (req, res) => {
      if (!meetingType || !meetingDate || !meetingTime) {
       return res.status(400).json({ error: 'Meeting type, date, and time are required' });
     }
+    const linkId = generateLinkId();
+    const channelName = linkId; 
+
     const uid = 0;
     const role = RtcRole.PUBLISHER;
-    const expirationTimeInSeconds = 86400; 
+    const expirationTimeInSeconds = 691200 ; 
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
@@ -49,7 +51,6 @@ router.post('/create-room', auth, async (req, res) => {
       privilegeExpiredTs
     );
 
-    const linkId = generateLinkId();
 
     const agora = await Agora.create({
       token,

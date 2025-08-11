@@ -28,7 +28,6 @@ const MeetingList = () => {
 
   const getStartTimeOnly = (timeStr) => {
     if (!timeStr) return timeStr;
-    // If time contains " - " (duration format), extract only the start time
     if (timeStr.includes(' - ')) {
       return timeStr.split(' - ')[0];
     }
