@@ -7,7 +7,6 @@ import { useAuth } from "../context/AuthContext";
 export default function SignIn() {
 const [formData, setFormData] = useState({
     email: '',
-    password: ''
   });
 
  const navigate = useNavigate();
@@ -68,24 +67,6 @@ const [formData, setFormData] = useState({
                 />
               </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    name="password"
-                    type= 'password'
-                    required
-                    className="w-full px-4 py-3  bg-amber-50 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 text-sm pr-12"
-                    placeholder="Enter your password"
-                    value={formData.password}
-                    onChange={handleChange}
-                  />
-
-                </div>
-              </div>
       <button className="bg-blue-600 text-white px-4 py-2" type="submit">Sign In</button>
       <Link 
           to="/signup" 

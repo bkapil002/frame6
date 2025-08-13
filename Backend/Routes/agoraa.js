@@ -196,6 +196,9 @@ router.put('/join-room/:linkId', auth, async (req, res) => {
         token: agora.token,
         linkId: agora.linkId,
         uid: rmember,
+        meetingType:agora.meetingType,
+        meetingDate:agora.meetingDate,
+        meetingTime:agora.meetingTime,
         user: {
           _id: agora.user._id,
           email: agora.user.email,
