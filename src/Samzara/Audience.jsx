@@ -31,16 +31,18 @@ const Audience = ({normalRemoteUsers,isAdmin ,email,user,image,names}) => {
                   )}
                   {normalRemoteUsers.map((remoteUser) =>
                     remoteUser.uid !== email ? (
+                      <>
                       <div key={remoteUser.uid} className="text-center">
                         <img
                           src={image && image[remoteUser.uid] ? image[remoteUser.uid] : "/default-avatar.png"}
                           alt={remoteUser.uid}
                           className="w-14 h-14 mx-auto rounded-full object-cover border"
                         />
-                        <div className="text-sm font-medium mt-2 text-gray-800">
+                      </div>
+                      <div className="text-sm font-medium mt-2 text-gray-800">
                           {names[remoteUser.uid] || "Loading..."}
                         </div>
-                      </div>
+                        </>
                     ) : null
                   )}
                 </div>
