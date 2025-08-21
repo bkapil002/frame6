@@ -407,7 +407,9 @@ const Basics = () => {
                     <button
                       onClick={async () => {
                         await handleRemovePromotedUser();
-                        handleResetOwnRequest();
+                        await handleResetOwnRequest();
+                        setCalling(false)
+
                       }}
                       className="bg-blue-900  text-white px-3 py-1 cursor-pointer text-sm rounded-lg"
                     >
