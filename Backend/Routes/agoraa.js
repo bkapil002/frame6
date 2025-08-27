@@ -12,43 +12,43 @@ const appCertificate = process.env.APP_CERTIFICATE;
 
 
 async function refreshTokens() {
-  try {
-    if (!appId || !appCertificate) {
-      console.error("Missing APP_ID or APP_CERTIFICATE");
-      return;
-    }
+  // try {
+  //   if (!appId || !appCertificate) {
+  //     console.error("Missing APP_ID or APP_CERTIFICATE");
+  //     return;
+  //   }
 
-    console.log("Running token refresh...");
+  //   console.log("Running token refresh...");
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  //   const today = new Date();
+  //   today.setHours(0, 0, 0, 0);
 
-    const meetings = await Agora.find({ meetingDate: { $gte: today } });
+  //   const meetings = await Agora.find({ meetingDate: { $gte: today } });
 
-    for (const meeting of meetings) {
-      const uid = 0;
-      const role = RtcRole.PUBLISHER;
-      const expirationTimeInSeconds = 86400;
-      const currentTimestamp = Math.floor(Date.now() / 1000);
-      const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
+  //   for (const meeting of meetings) {
+  //     const uid = 0;
+  //     const role = RtcRole.PUBLISHER;
+  //     const expirationTimeInSeconds = 86400;
+  //     const currentTimestamp = Math.floor(Date.now() / 1000);
+  //     const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
 
-      const newToken = RtcTokenBuilder.buildTokenWithUid(
-        appId,
-        appCertificate,
-        meeting.channel,
-        uid,
-        role,
-        privilegeExpiredTs
-      );
+  //     const newToken = RtcTokenBuilder.buildTokenWithUid(
+  //       appId,
+  //       appCertificate,
+  //       meeting.channel,
+  //       uid,
+  //       role,
+  //       privilegeExpiredTs
+  //     );
 
-      meeting.token = newToken;
-      await meeting.save();
-    }
+  //     meeting.token = newToken;
+  //     await meeting.save();
+  //   }
 
-    console.log(`✅Updated tokens for ${meetings.length} meetings.`);
-  } catch (err) {
-    console.error("Error updating tokens:", err);
-  }
+  //   console.log(`✅Updated tokens for ${meetings.length} meetings.`);
+  // } catch (err) {
+  //   console.error("Error updating tokens:", err);
+  // }
 }
 
 function startTokenCron() {

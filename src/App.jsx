@@ -12,6 +12,7 @@ import SideBar from "./Samzara/SideBar";
 import { useState } from "react";
 import MeetingList from "./Samzara/MeetingList";
 import CreateMeeting from "./Samzara/CreateMetting";
+import AttendanceRequests from "./pages/AttendanceRequests";
 
 function App() {
 
@@ -24,7 +25,7 @@ function App() {
       <Navebar/>
       <div className="h-screen flex overflow-hidden">
 
-       <div className="">
+       <div className="mt-1">
         <SideBar/>
        </div>
       <div className="flex-1 flex flex-col overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -42,6 +43,7 @@ function App() {
         <Route path= '/mleetingList' element={<MeetingList/>}/>
         <Route path='/signin' element={<SignIn/>}/>
         <Route path= '/signup' element={<SignUp/>}/>
+        <Route path="/attendanc" element={<AttendanceRequests />} />
       </Routes>
       </div>
       
