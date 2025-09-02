@@ -5,6 +5,7 @@ const { auth } = require('../middleware/auth');
 const Agora = require('../Modal/Agoraa');
 const MeetingAttendance = require('../Modal/MeetingAttendance');
 
+
 router.post('/meeting/join/:linkId', auth, async (req, res) => {
   try {
     const { linkId } = req.params;

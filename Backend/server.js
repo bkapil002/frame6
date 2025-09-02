@@ -6,7 +6,6 @@ const setupCluster = require('./config/cluster');
 const cookieParser = require('cookie-parser');
 const user = require('./Routes/user')
 // const agoraa = require('./Routes/agoraa')
-require("./Routes/meetingCron")
 const { router: agoraa, startTokenCron } = require("./Routes/agoraa");
 const app = express();
 const meetingAttendance = require('./Routes/meetingAttendance')
@@ -18,6 +17,8 @@ app.use(cors({
     : 'http://localhost:5173',
   credentials: true
 }));
+
+
 
 app.use(cookieParser());
 app.use(express.json());

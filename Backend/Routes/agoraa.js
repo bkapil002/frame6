@@ -5,10 +5,10 @@ const { auth } = require('../middleware/auth');
 const Agora = require('../Modal/Agoraa');
 const PushedUid = require('../Modal/PushedUid');
 const PromotedUid = require('../Modal/PromotedUid');
-const cron = require("node-cron");
-const { createRecurringMeetings } = require("./recurrence");
 const appId = process.env.APP_ID;
 const appCertificate = process.env.APP_CERTIFICATE;
+const cron = require("node-cron");
+const dayjs = require('dayjs');
 
 
 async function refreshTokens() {
@@ -23,7 +23,12 @@ async function refreshTokens() {
   //   const today = new Date();
   //   today.setHours(0, 0, 0, 0);
 
-  //   const meetings = await Agora.find({ meetingDate: { $gte: today } });
+  //   const endDate = new Date(today);
+  //   endDate.setDate(endDate.getDate() + 8);
+
+  //   const meetings = await Agora.find({
+  //     meetingDate: { $gte: today, $lte: endDate }
+  //   });
 
   //   for (const meeting of meetings) {
   //     const uid = 0;
@@ -57,43 +62,128 @@ function startTokenCron() {
 }
 
 
-router.post("/create-room", auth, async (req, res) => {
+function getNthWeekdayOfMonth(baseDate, monthsToAdd = 1) {
+  const date = new Date(baseDate);
+
+  const dayOfWeek = date.getDay();
+  const dayOfMonth = date.getDate();
+  const nth = Math.ceil(dayOfMonth / 7);
+
+  const targetMonth = date.getMonth() + monthsToAdd;
+  const targetYear = date.getFullYear() + Math.floor(targetMonth / 12);
+  const normalizedMonth = targetMonth % 12;
+
+  const firstDay = new Date(targetYear, normalizedMonth, 1);
+  let offset = (dayOfWeek - firstDay.getDay() + 7) % 7;
+  let targetDate = 1 + offset + (nth - 1) * 7;
+
+
+  const lastDay = new Date(targetYear, normalizedMonth + 1, 0).getDate();
+  if (targetDate > lastDay) {
+    targetDate -= 7; 
+  }
+
+  return new Date(targetYear, normalizedMonth, targetDate);
+}
+
+
+
+router.post('/create-room', auth, async (req, res) => {
   try {
+    if (!appId || !appCertificate) {
+      return res.status(400).json({ error: 'Missing environment variables' });
+    }
+
     const { meetingType, meetingDate, meetingTime, meetingRepeat } = req.body;
 
     if (!meetingType || !meetingDate || !meetingTime) {
-      return res.status(400).json({ error: "Meeting type, date, and time are required" });
+      return res.status(400).json({ error: 'Meeting type, date, and time are required' });
     }
 
+    const startDate = dayjs(meetingDate);
+
     const recurrence = {
-      repeatType: meetingRepeat, 
+      repeatType: meetingRepeat,
       interval: 1,
-      batchSize: 15
+      batchSize: 5
     };
 
-    const user = {
-      _id: req.user._id,
-      email: req.user.email,
-      name: req.user.name,
-      imageUrls: req.user.imageUrls
-    };
+    const loopCount = meetingRepeat === "Does not repeat" ? 1 : recurrence.batchSize;
 
-    const createdMeetings = await createRecurringMeetings(
-      user,
-      { meetingType, meetingDate, meetingTime, meetingRepeat },
-      recurrence
-    );
+    const meetingsToCreate = [];
+
+    for (let i = 0; i < loopCount; i++) {
+      let dateToUse = startDate;
+
+      if (meetingRepeat === "Daily") {
+        dateToUse = startDate.add(i * recurrence.interval, "day");
+      } else if (meetingRepeat === "Weekly") {
+        dateToUse = startDate.add(i * recurrence.interval, "week");
+      } else if (meetingRepeat === "Monthly") {
+        dateToUse = dayjs(getNthWeekdayOfMonth(startDate.toDate(), i * recurrence.interval));
+      }
+      
+        const formattedDate = dayjs(dateToUse).format("DD-MM-YYYY");
+
+
+       const safeType = meetingType.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+
+
+       const safeTime = meetingTime
+    .replace(/\s+/g, "")            
+    .replace(/:/g, "")              
+    .replace(/[^a-zA-Z0-9-]/g, "")  
+    .toLowerCase();
+
+
+  const linkId = `${safeType}-${formattedDate}-${safeTime}`;
+      const channelName = linkId;
+
+      const uid = 0;
+      const role = RtcRole.PUBLISHER;
+      const expirationTimeInSeconds = 86400;
+      const currentTimestamp = Math.floor(Date.now() / 1000);
+      const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
+
+      const token = RtcTokenBuilder.buildTokenWithUid(
+        appId,
+        appCertificate,
+        channelName,
+        uid,
+        role,
+        privilegeExpiredTs
+      );
+
+      const agora = await Agora.create({
+        token,
+        linkId,
+        appId,
+        channel: channelName,
+        user: {
+          _id: req.user._id,
+          email: req.user.email,
+          name: req.user.name,
+          imageUrls: req.user.imageUrls
+        },
+        meetingType,
+        meetingDate: dateToUse.toDate(),
+        meetingTime,
+        meetingRepeat,
+        recurrence
+      });
+
+      meetingsToCreate.push(agora);
+    }
 
     return res.status(200).json({
-      message: "Meetings created successfully",
-      meetings: createdMeetings
+      meetings: meetingsToCreate
     });
+
   } catch (error) {
-    console.error("Error creating room:", error);
-    return res.status(500).json({ error: "Server error" });
+    console.error('Token generation failed:', error);
+    return res.status(500).json({ error: 'Could not generate token and linkId' });
   }
 });
-
 
 router.delete('/delete-room/:linkId', auth, async (req, res) => {
   try {
@@ -228,15 +318,23 @@ router.get('/meeting-time/:meetingDate', auth, async (req, res) => {
 
 
 
-router.get('/all-rooms', auth, async (req, res) => {
+router.get('/all-rooms' , async (req, res) => {
   try {
-    const rooms = await Agora.find().sort({ createdAt: -1 }); 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); 
+
+    const rooms = await Agora.find({
+      meetingDate: { $gte: today }   
+    }).sort({ meetingDate: 1 });     
+
     res.status(200).json(rooms);
   } catch (error) {
-    console.error('Error fetching all rooms:', error);
-    res.status(500).json({ error: 'Could not fetch rooms' });
+    console.error("Error fetching all upcoming rooms:", error);
+    res.status(500).json({ error: "Could not fetch upcoming rooms" });
   }
 });
+
+
 
 
 router.put('/join-room/:linkId', auth, async (req, res) => {
