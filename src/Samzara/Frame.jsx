@@ -55,86 +55,175 @@ const Basics = () => {
   const [promotedUid, setPromotedUid] = useState(null);
   const [promoteLoading, setPromoteLoading] = useState(false);
   const [meetingTime, setMeetingTime] = useState("");
-  const [adminName , setAdminName] = useState("")
+  const [adminName, setAdminName] = useState("");
   const [meetingtopic, setMeetingtopic] = useState("");
+  const [meetingDescription, setMeetingDescription] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [removeUser, setRemoveUser] = useState([]);
   const remoteUsers = useRemoteUsers();
 
   useEffect(() => {
-     let timer;
-  if (isConnected && user && linkId && meetingTime) {
-      const [startStr, endStr] = meetingTime.split(" - ");
-      const today = dayjs().tz("Asia/Kolkata").format("YYYY-MM-DD");
+    if (!user || !linkId) return;
 
-      const startTime = dayjs(`${today} ${startStr}`, "YYYY-MM-DD h:mm A").tz(
-        "Asia/Kolkata"
-      );
-      const endTime = dayjs(`${today} ${endStr}`, "YYYY-MM-DD h:mm A").tz(
-        "Asia/Kolkata"
-      );
-
-      const now = dayjs().tz("Asia/Kolkata");
-      let delay = 0;
-      if (now.isBefore(startTime)) {
-        delay = startTime.diff(now);
-        console.log(
-          `User connected early. Waiting ${delay / 1000}s until meeting start.`
-        );
-      } else if (now.isAfter(startTime) && now.isBefore(endTime)) {
-        delay = 0;
-        console.log(
-          "User connected during meeting. Waiting 1 min to log join."
-        );
-      } else {
-        console.log("User connected after meeting ended. Join not recorded.");
-        return;
-      }
-       timer = setTimeout(() => {
-    const logJoin = async () => {
+    const fetchRemoveattendance = async () => {
       try {
-        await axios.post(
-          `http://localhost:5000/api/attendance/meeting/join/${linkId}`,
-          {},
+        await axios.delete(
+          `http://localhost:5000/api/removeduser/delete-attendance/${linkId}`,
           {
             headers: { Authorization: `Bearer ${user.token}` },
           }
         );
-        console.log("Join time recorded");
+      } catch (error) {}
+    };
+
+    fetchRemoveattendance();
+    const interval = setInterval(fetchRemoveattendance, 3000);
+
+    return () => clearInterval(interval);
+  }, [user, linkId]);
+
+  useEffect(() => {
+    if (!isConnected || !user || !linkId || !meetingTime) return;
+
+    if (!meetingTime.includes(" - ")) return;
+
+    let timer;
+    const [startStr, endStr] = meetingTime.split(" - ");
+    const today = dayjs().tz("Asia/Kolkata").format("YYYY-MM-DD");
+
+    const startTime = dayjs(`${today} ${startStr}`, "YYYY-MM-DD h:mm A").tz(
+      "Asia/Kolkata"
+    );
+    const endTime = dayjs(`${today} ${endStr}`, "YYYY-MM-DD h:mm A").tz(
+      "Asia/Kolkata"
+    );
+    const now = dayjs().tz("Asia/Kolkata");
+    let delay = 0;
+    if (now.isBefore(startTime)) {
+      delay = startTime.diff(now);
+      console.log(
+        `User connected early. Waiting ${delay / 1000}s until meeting start.`
+      );
+    } else if (now.isAfter(startTime) && now.isBefore(endTime)) {
+      delay = 0;
+      console.log("User connected during meeting. Waiting 1 min to log join.");
+    } else {
+      console.log("User connected after meeting ended. Join not recorded.");
+      return;
+    }
+
+    timer = setTimeout(() => {
+      const logJoin = async () => {
+        try {
+          await axios.post(
+            `http://localhost:5000/api/attendance/meeting/join/${linkId}`,
+            {},
+            {
+              headers: { Authorization: `Bearer ${user.token}` },
+            }
+          );
+          console.log("Join time recorded");
+        } catch (error) {
+          console.error("Error logging join time:", error);
+        }
+      };
+      logJoin();
+    }, delay);
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isConnected, user, linkId, meetingTime]);
+
+  useEffect(() => {
+    let leaveTimer;
+
+    if (user && linkId && meetingTime) {
+      const [startStr, endStr] = meetingTime.split(" - ");
+      const today = dayjs().tz("Asia/Kolkata").format("YYYY-MM-DD");
+
+      const endTime = dayjs(`${today} ${endStr}`, "YYYY-MM-DD h:mm A").tz(
+        "Asia/Kolkata"
+      );
+      const now = dayjs().tz("Asia/Kolkata");
+
+      if (now.isBefore(endTime)) {
+        const msUntilEnd = endTime.diff(now);
+        console.log(`Meeting ends in ${msUntilEnd / 1000} seconds`);
+
+        leaveTimer = setTimeout(async () => {
+          try {
+            const leaveTime = dayjs().tz("Asia/Kolkata").format();
+            await axios.put(
+              `http://localhost:5000/api/attendance/meeting/leave/${linkId}`,
+              { leaveTime },
+              { headers: { Authorization: `Bearer ${user.token}` } }
+            );
+            console.log("Leave time recorded automatically at meeting end");
+          } catch (error) {
+            console.error("Error logging leave time:", error);
+          }
+        }, msUntilEnd);
+      } else {
+        console.log("Meeting already ended, no leave scheduled");
+      }
+    }
+
+    return () => {
+      if (leaveTimer) clearTimeout(leaveTimer);
+    };
+  }, [user, linkId, meetingTime]);
+
+  useEffect(() => {
+    let hasLeft = false;
+
+    const handleLeave = async () => {
+      if (hasLeft || !user || !linkId) return;
+      hasLeft = true;
+
+      try {
+        await axios.put(
+          `http://localhost:5000/api/attendance/meeting/leave/${linkId}`,
+          {},
+          { headers: { Authorization: `Bearer ${user.token}` } }
+        );
+        console.log("Leave time recorded");
       } catch (error) {
-        console.error("Error logging join time:", error);
+        console.error("Error logging leave time:", error);
       }
     };
 
-    logJoin();
-    }, delay);
-  }
-}, [isConnected, user, linkId]);
-
-useEffect(() => {
-  const handleLeave = async () => {
-    if (!user || !linkId) return;
-    try {
-      await axios.put(
-        `http://localhost:5000/api/attendance/meeting/leave/${linkId}`,
-        {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-      console.log("Leave time recorded");
-    } catch (error) {
-      console.error("Error logging leave time:", error);
-    }
-  };
-
-  if (!isConnected && calling === false) {
-    handleLeave();
-  }
-
-  return () => {
-    if (isConnected) {
+    if (!isConnected && calling === false) {
       handleLeave();
     }
-  };
-}, [isConnected, calling, user, linkId]);
 
+    return () => {
+      if (isConnected) {
+        handleLeave();
+      }
+    };
+  }, [isConnected, calling, user, linkId]);
+
+  useEffect(() => {
+    const handleUnload = () => {
+      if (isConnected) {
+        fetch(`http://localhost:5000/api/attendance/meeting/leave/${linkId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${user.token}`,
+          },
+          body: JSON.stringify({}),
+          keepalive: true,
+        });
+      }
+    };
+
+    window.addEventListener("unload", handleUnload);
+    return () => window.removeEventListener("unload", handleUnload);
+  }, [isConnected, linkId, user]);
 
   useEffect(() => {
     const uids = remoteUsers.map((u) => u.uid);
@@ -190,7 +279,8 @@ useEffect(() => {
         setAdminImage(data.agora.user.imageUrls);
         setMeetingTime(data.agora.meetingTime);
         setMeetingtopic(data.agora.meetingType);
-        setAdminName(data.agora.user.name)
+        setMeetingDescription(data.agora.meetingDescription);
+        setAdminName(data.agora.user.name);
       } catch (error) {
         console.error("Error fetching room details:", error);
       }
@@ -198,7 +288,59 @@ useEffect(() => {
     fetchRoomDetails();
   }, [user, linkId]);
 
+  useEffect(() => {
+    if (!user || !linkId) return;
+    const fetchRemoveUserDetails = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:5000/api/removeduser/user-removed/${linkId}`,
+          {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }
+        );
+        setRemoveUser(
+          Array.isArray(response.data.data) ? response.data.data : []
+        );
+      } catch (error) {
+        setRemoveUser([]); // fallback
+        console.error("Error fetching removed user details:", error);
+      }
+    };
+    fetchRemoveUserDetails();
+    const interval = setInterval(fetchRemoveUserDetails, 3000);
+    return () => clearInterval(interval);
+  }, [user, linkId]);
+
   usePublish([localMicrophoneTrack, localCameraTrack]);
+
+  const handleRemoveUser = async () => {
+    if (!selectedUser) return;
+
+    setRemoving(true);
+    try {
+      await axios.post(
+        "http://localhost:5000/api/removeduser/remove-user",
+        {
+          uid: selectedUser.uid,
+          meetingType: meetingtopic,
+          meetingTime: meetingTime,
+          name: names[selectedUser.uid] || "Unknown",
+          linkId: linkId,
+          adminName: adminName,
+          admin: admin,
+        },
+        {
+          headers: { Authorization: `Bearer ${user.token}` },
+        }
+      );
+
+      setShowModal(false);
+      setSelectedUser(null);
+    } catch (error) {
+      console.error("Error removing user:", error);
+    }
+    setRemoving(false);
+  };
 
   const isAdmin = email === admin;
 
@@ -290,6 +432,7 @@ useEffect(() => {
     }
     setPromoteLoading(false);
   };
+
   const handleRemovePromotedUser = async () => {
     if (!isAdmin && promotedUid !== email) return;
 
@@ -330,7 +473,13 @@ useEffect(() => {
       >
         {!isConnected ? (
           <div className="  flex justify-center items-center h-screen flex-col ">
-            <ReadVideo handleRemovePromotedUser={handleRemovePromotedUser}  handleResetOwnRequest={handleResetOwnRequest} setCalling={setCalling} />
+            <ReadVideo
+              handleRemovePromotedUser={handleRemovePromotedUser}
+              handleResetOwnRequest={handleResetOwnRequest}
+              setCalling={setCalling}
+              meetingDescription={meetingDescription}
+              meetingtopic={meetingtopic}
+            />
           </div>
         ) : (
           <>
@@ -383,7 +532,9 @@ useEffect(() => {
 
                   {/* Footer (Name) */}
                   <div className="p-2 text-center">
-                    <p className="text-xs sm:text-sm text-gray-500">{adminName}</p>
+                    <p className="text-xs sm:text-sm text-gray-500">
+                      {adminName}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -467,8 +618,12 @@ useEffect(() => {
                         !isRequesting ? (
                           <button
                             onClick={handlePushRequest}
-                            className="bg-[#F86925] text-white cursor-pointer  px-2 py-1 md:text-sm  text-xs  rounded-[8px]"
-                            disabled={pushLoading}
+                            className={`bg-[#F86925] text-white cursor-pointer px-2 py-1 md:text-sm text-xs rounded-[8px] ${
+                              removeUser.includes(email)
+                                ? "opacity-50 cursor-not-allowed"
+                                : ""
+                            }`}
+                            disabled={pushLoading || removeUser.includes(email)}
                           >
                             {pushLoading ? "Requesting..." : "Request to Share"}
                           </button>
@@ -506,12 +661,12 @@ useEffect(() => {
                     >
                       {micOn ? (
                         <spam className="flex justify-center gap-1 items-center">
-                          <Mic Mic size={16}  />
+                          <Mic Mic size={16} />
                           Mic on
                         </spam>
                       ) : (
                         <spam className="flex justify-center gap-1 items-center">
-                          <MicOff Mic size={16}  />
+                          <MicOff Mic size={16} />
                           Mic off
                         </spam>
                       )}
@@ -526,12 +681,12 @@ useEffect(() => {
                       >
                         {cameraOn ? (
                           <spam className="flex justify-center gap-1  items-center">
-                            <Camera  size={17} />
+                            <Camera size={17} />
                             Camera on
                           </spam>
                         ) : (
                           <spam className="flex justify-center gap-1  items-center  ">
-                            <CameraOff size={17}   />
+                            <CameraOff size={17} />
                             Camera off
                           </spam>
                         )}
@@ -548,12 +703,12 @@ useEffect(() => {
                       >
                         {micOn ? (
                           <spam className="flex justify-center gap-1 items-center ">
-                            <Mic size={16}  />
+                            <Mic size={16} />
                             Mic on
                           </spam>
                         ) : (
                           <spam className="flex justify-center gap-1 items-center ">
-                            <MicOff  size={16}  />
+                            <MicOff size={16} />
                             Mic off
                           </spam>
                         )}
@@ -588,81 +743,67 @@ useEffect(() => {
                   )}
                 </div>
               </div>
-              {/* Right sidebar */}
-              <div className="w-full lg:w-1/5 bg-white shadow rounded-lg">
+
+              <div className="w-full lg:w-1/5 bottom-1 bg-white shadow rounded-lg flex flex-col">
                 <div className="bg-[#F86925] text-white text-center py-2 font-semibold rounded-t-lg text-sm sm:text-xs">
                   People Requesting to Share
                 </div>
-
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-3 lg:grid-cols-2 gap-3 p-3">
+                {/* Set max height and make this div scrollable */}
+                <div
+                  className="justify-center flex flex-wrap gap-1 p-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 "
+                  style={{ maxHeight: "350px" }} // adjust as needed (e.g. 300px or 60vh)
+                >
                   {isRequesting && promotedUid !== email && (
-                    <div className="w-16 sm:w-20 h-16 sm:h-20 relative mx-auto rounded-full flex items-center justify-center group">
+                    <div className="relative w-18 h-18 sm:w-19 sm:h-19 rounded-[4px] overflow-hidden bg-black flex items-center justify-center">
                       <LocalUser
                         audioTrack={localMicrophoneTrack}
                         cameraOn={cameraOn}
                         micOn={micOn}
                         playAudio={false}
                         videoTrack={localCameraTrack}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          borderRadius: "10%",
-                        }}
+                        style={{ width: "100%", height: "100%" }}
                       >
-                        <div className="w-full overflow-hidden">
-                          <p className="bg-gray-700/60 w-full text-white text-xs text-center truncate">
-                            {user.name}
-                          </p>
-                        </div>
+                        <p className="absolute bottom-0 left-0 w-full bg-black/60 text-white text-xs text-center truncate px-1">
+                          {user.name}
+                        </p>
                       </LocalUser>
                     </div>
                   )}
 
                   {requestingRemoteUsers
-                    .filter((u) => u.uid !== promotedUid)
-                    .map(
-                      (u) =>
-                        u.uid !== email && (
-                          <div
-                            key={u.uid}
-                            className="flex flex-col items-center space-y-1"
+                    .filter((u) => u.uid !== promotedUid && u.uid !== email)
+                    .map((u) => (
+                      <div key={u.uid} className="relative">
+                        {/* Remove button (Admin only) */}
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleResetOwnRequest(u.uid)}
+                            className="absolute   z-10 text-[10px] bg-red-600 hover:bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center"
+                            title="Remove request"
                           >
-                            {isAdmin && (
-                              <button
-                                onClick={() => handleResetOwnRequest(u.uid)}
-                                className="text-[10px] sm:text-xs bg-gray-800 hover:bg-red-600 cursor-pointer text-white rounded px-2 py-0.5 mb-1"
-                                title="Remove request"
-                              >
-                                Remove
-                              </button>
-                            )}
+                            X
+                          </button>
+                        )}
 
-                            <div
-                              className={`w-16 sm:w-20 h-16 sm:h-20 mx-auto rounded-full flex items-center justify-center ${
-                                isAdmin ? "cursor-pointer" : ""
-                              } group`}
-                              onClick={() =>
-                                isAdmin && handlePromoteUser(u.uid)
-                              }
-                            >
-                              <RemoteUser
-                                user={u}
-                                style={{
-                                  width: "100%",
-                                  height: "100%",
-                                  borderRadius: "10%",
-                                }}
-                              >
-                                <div className="w-full overflow-hidden">
-                                  <p className="bg-gray-700/60 w-full text-white text-[10px] sm:text-xs text-center truncate">
-                                    {names[u.uid] || "Loading..."}
-                                  </p>
-                                </div>
-                              </RemoteUser>
-                            </div>
-                          </div>
-                        )
-                    )}
+                        <div
+                          className={`w-18 h-18 sm:w-19 sm:h-19 rounded-[4px] overflow-hidden bg-black flex items-center justify-center ${
+                            isAdmin
+                              ? "cursor-pointer hover:ring-2 hover:ring-[#F86925]"
+                              : ""
+                          }`}
+                          onClick={() => isAdmin && handlePromoteUser(u.uid)}
+                        >
+                          <RemoteUser
+                            user={u}
+                            style={{ width: "100%", height: "100%" }}
+                          >
+                            <p className="absolute bottom-0 left-0 w-full bg-black/60 text-white text-xs text-center truncate px-1">
+                              {names[u.uid] || "Loading..."}
+                            </p>
+                          </RemoteUser>
+                        </div>
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>
@@ -682,11 +823,14 @@ useEffect(() => {
                 </div>
 
                 {/* Audience Grid */}
-                <div className="p-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                  {/* Show local user if not admin */}
-                  {!isAdmin && !isRequesting && (
-                    <div className="flex flex-col items-center justify-center cursor-pointer group">
-                      <div className="w-24 h-24 relative mx-auto rounded-full items-center justify-center group cursor-pointer">
+                <div
+                  className={`flex flex-wrap justify-center gap-3 p-4 ${
+                    normalRemoteUsers.length === 0 ? "h-50" : ""
+                  }`}
+                >
+                  {!isAdmin && !removeUser.includes(email) && !isRequesting && (
+                    <div className="flex flex-col items-center justify-center cursor-pointer group w-24">
+                      <div className="md:w-24 w-20 h-20 md:h-24  relative mx-auto rounded-full flex items-center justify-center">
                         <LocalUser
                           audioTrack={localMicrophoneTrack}
                           cameraOn={cameraOn}
@@ -696,37 +840,47 @@ useEffect(() => {
                           style={{
                             width: "100%",
                             height: "100%",
-                            borderRadius: "12%",
+                            borderRadius: "8px",
                           }}
                         />
                       </div>
-                      <p className="mt-1 w-full text-[#3C3C3C] text-xs sm:text-sm text-center truncate">
+                      <p className="mb-1.5 w-full text-[#3C3C3C] text-xs sm:text-sm text-center truncate">
                         {user.name}
                       </p>
                     </div>
                   )}
 
-                  {/* Remote normal users */}
                   {normalRemoteUsers
-                    .filter((user) => !pushedUids.includes(user.uid))
+                    .filter(
+                      (user) =>
+                        !pushedUids.includes(user.uid) &&
+                        user.uid !== email &&
+                        !removeUser.includes(user.uid)
+                    )
                     .map(
                       (user) =>
                         user.uid !== email && (
                           <div
                             key={user.uid}
-                            className="flex flex-col items-center justify-center"
+                            className="flex flex-col items-center justify-center cursor-pointer group w-24"
+                            onClick={() => {
+                              if (isAdmin) {
+                                setSelectedUser(user);
+                                setShowModal(true);
+                              }
+                            }}
                           >
-                            <div className="w-24 h-24 relative mx-auto rounded-full items-center justify-center group cursor-pointer">
+                            <div className="md:w-24 w-20 h-20 md:h-24 relative mx-auto rounded-full flex items-center justify-center">
                               <RemoteUser
                                 user={user}
                                 style={{
                                   width: "100%",
                                   height: "100%",
-                                  borderRadius: "12%",
+                                  borderRadius: "8px",
                                 }}
                               />
                             </div>
-                            <p className="mt-1 w-full text-[#3C3C3C] text-xs sm:text-sm text-center truncate">
+                            <p className="mb-1.5 w-full text-[#3C3C3C] text-xs sm:text-sm text-center truncate">
                               {names[user.uid] || "Loading..."}
                             </p>
                           </div>
@@ -738,8 +892,33 @@ useEffect(() => {
           </div>
         )}
         <div className="-mt-3">{isConnected && <Know />}</div>
-        
       </div>
+      {showModal && selectedUser && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-white rounded-lg p-6 w-80">
+            <h3 className="text-lg font-semibold mb-4">Remove User</h3>
+            <p className="mb-4">
+              Do you want to remove{" "}
+              <strong>{names[selectedUser.uid] || "this user"}</strong>?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-gray-400 text-white rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRemoveUser}
+                disabled={removing}
+                className="px-4 py-2 bg-red-600 text-white rounded"
+              >
+                {removing ? "Removing..." : "Remove"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

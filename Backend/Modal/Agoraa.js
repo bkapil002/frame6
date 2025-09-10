@@ -47,6 +47,10 @@ const userSchema = new mongoose.Schema({
         type: String, 
         required: true
     },
+     meetingDescription:{
+   type: String,
+    required: true
+  },
     meetingRepeat: {
       type: String, 
       required: true

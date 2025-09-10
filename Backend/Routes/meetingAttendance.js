@@ -28,6 +28,7 @@ router.post('/meeting/join/:linkId', auth, async (req, res) => {
       meetingType: meeting.meetingType,
       meetingTime: meeting.meetingTime,
       meetingDate: meeting.meetingDate,
+      linkId:meeting.linkId,
       joinTime: new Date()
     });
 
@@ -73,6 +74,8 @@ router.put('/meeting/leave/:linkId', auth, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
 
 router.get('/attendance/my', auth, async (req, res) => {
   try {

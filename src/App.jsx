@@ -11,6 +11,7 @@ import MeetingList from "./Samzara/MeetingList";
 import CreateMeeting from "./Samzara/CreateMetting";
 import AttendanceRequests from "./pages/AttendanceRequests";
 import Footer from "./components/Footer";
+import { Toaster } from 'react-hot-toast';
 
 function App() {
 
@@ -20,8 +21,9 @@ function App() {
    <AuthProvider>
       <Router>
         <Navebar />
-        <div className="h-screen flex overflow-hidden">
-          <div className="mt-1">
+        <div className="h-screen w-full  justify-center flex overflow-hidden">
+          <div className=" flex w-320 overflow-hidden">
+          <div className="">
             <SideBar />
           </div>
           <div className="flex-1 flex flex-col overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -41,14 +43,19 @@ function App() {
                 <Route path="/mleetingList" element={<MeetingList />} />
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/signup" element={<SignUp />} />
-                <Route path="/attendanc" element={<AttendanceRequests />} />
+                <Route path="/attendance" element={<AttendanceRequests />} />
               </Routes>
             </div>
 
-            {/* Footer always at bottom */}
-            <Footer />
+            {/* Footer always at bottom */} 
+            
           </div>
+           <Toaster  position="top-center" reverseOrder={false} />
+           
+           </div>
+           
         </div>
+        <Footer />
       </Router>
     </AuthProvider>
   )

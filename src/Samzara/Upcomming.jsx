@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import axios from "axios";
 import { Trash2, Share2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const Upcomming = () => {
   const { user } = useAuth();
@@ -11,6 +12,7 @@ const Upcomming = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [deleteType, setDeleteType] = useState("this");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -37,6 +39,7 @@ const Upcomming = () => {
 
   const handleDeleteConfirm = async () => {
     if (!selectedRoom) return;
+    setIsLoading(true);
     try {
       if (deleteType === "this") {
         await axios.delete(
@@ -55,8 +58,26 @@ const Upcomming = () => {
       );
       setShowModal(false);
       setSelectedRoom(null);
+      toast.success("Deleted ");
+      window.location.reload();
     } catch (err) {
+      toast.error("Meeting is not Deleted");
       console.error("Error deleting room:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const getMeetingEndDateTime = (meetingDate, meetingTime) => {
+    try {
+      const [startStr, endStr] = meetingTime.split(" - ");
+
+      const dateStr = new Date(meetingDate).toISOString().split("T")[0];
+      const endDateTime = new Date(`${dateStr} ${endStr}`);
+
+      return endDateTime;
+    } catch (e) {
+      console.error("Time parse error:", e);
+      return null;
     }
   };
 
@@ -69,7 +90,10 @@ const Upcomming = () => {
       {loading ? (
         <div className=" w-full">
           {[...Array(4)].map((_, index) => (
-            <div  key={index} className="bg-gray-100 animate-pulse rounded-xl mt-2 p-2 w-full  shadow-lg">
+            <div
+              key={index}
+              className="bg-gray-100 animate-pulse rounded-xl mt-2 p-2 w-full  shadow-lg"
+            >
               <div className="h-5 bg-gray-300 rounded w-1/3 mb-2"></div>
               <div className="h-3 bg-gray-300 rounded w-1/4 mb-4"></div>
               <div className="flex justify-between">
@@ -85,70 +109,79 @@ const Upcomming = () => {
       ) : (
         <div className="w-full  ">
           {rooms.length > 0 ? (
-            rooms.slice(0, 5).map((room) => (
-              <div
-                key={room._id}
-                className="bg-gray-100 overflow-hidden shadow-2xl rounded-xl p-2 w-full md:w-full mt-2 "
-              >
-                <h2 className="text-lg font-medium line-clamp-1 md:text-xl text-[#2A2A72]">
-                  {room.meetingType}
-                </h2>
-                <div className="text-[12px] md:text-xs flex text-gray-500 gap-2">
-                  <p>
-                    {new Date(room.meetingDate).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </p>
-                  <p>{room.meetingTime}</p>
-                </div>
+            rooms
+              .filter((room) => {
+                const endTime = getMeetingEndDateTime(
+                  room.meetingDate,
+                  room.meetingTime
+                );
+                return endTime && endTime > new Date(); 
+              })
+              .slice(0, 5)
+              .map((room) => (
+                <div
+                  key={room._id}
+                  className="bg-gray-100 overflow-hidden shadow-2xl rounded-xl p-2 w-full md:w-full mt-2 "
+                >
+                  <h2 className="text-lg font-medium line-clamp-1 md:text-xl text-[#2A2A72]">
+                    {room.meetingType}
+                  </h2>
+                  <div className="text-[12px] md:text-xs flex text-gray-500 gap-2">
+                    <p>
+                      {new Date(room.meetingDate).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
+                    <p>{room.meetingTime}</p>
+                  </div>
 
-                <div className="flex pr-2 justify-between text-center gap-1 mt-3">
-                  <Link
-                    to={`/room/${room.linkId}`}
-                    className="py-1 px-4 rounded-[5px] bg-[#178a43] hover:bg-[#2A2A72] cursor-pointer  text-white text-xs md:text-sm transition-colors"
-                  >
-                    Join
-                  </Link>
-                  <div className="flex text-center gap-3">
-                    <button
-                      onClick={() => {
-                        setSelectedRoom(room);
-                        setShowModal(true);
-                      }}
-                      className="cursor-pointer text-red-600"
+                  <div className="flex pr-2 justify-between text-center gap-1 mt-3">
+                    <Link
+                      to={`/room/${room.linkId}`}
+                      className="py-1 px-4 rounded-[5px] bg-[#178a43] hover:bg-[#2A2A72] cursor-pointer  text-white text-xs md:text-sm transition-colors"
                     >
-                      <Trash2 size={17} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (navigator.share) {
-                          navigator
-                            .share({
-                              title: "Join My Meeting",
-                              text: `Join this meeting: ${
-                                room.meetingType
-                              } on ${new Date(
-                                room.meetingDate
-                              ).toLocaleDateString()}`,
-                              url: `${window.location.origin}/room/${room.linkId}`,
-                            })
-                            .catch((err) =>
-                              console.log("Share cancelled", err)
-                            );
-                        } else {
-                          alert("Sharing is not supported on this browser.");
-                        }
-                      }}
-                      className="cursor-pointer text-[#2A2A72]"
-                    >
-                      <Share2 size={17} />
-                    </button>
+                      Join
+                    </Link>
+                    <div className="flex text-center gap-3">
+                      <button
+                        onClick={() => {
+                          setSelectedRoom(room);
+                          setShowModal(true);
+                        }}
+                        className="cursor-pointer text-red-600"
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (navigator.share) {
+                            navigator
+                              .share({
+                                title: "Join My Meeting",
+                                text: `Join this meeting: ${
+                                  room.meetingType
+                                } on ${new Date(
+                                  room.meetingDate
+                                ).toLocaleDateString()}`,
+                                url: `${window.location.origin}/room/${room.linkId}`,
+                              })
+                              .catch((err) =>
+                                console.log("Share cancelled", err)
+                              );
+                          } else {
+                            alert("Sharing is not supported on this browser.");
+                          }
+                        }}
+                        className="cursor-pointer text-[#2A2A72]"
+                      >
+                        <Share2 size={17} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))
           ) : (
             <p className="text-gray-500 text-sm text-center">No meetings yet</p>
           )}
@@ -191,9 +224,10 @@ const Upcomming = () => {
               </button>
               <button
                 onClick={handleDeleteConfirm}
+                disabled={isLoading}
                 className="bg-[#178a43] hover:bg-[#2A2A72] text-sm text-white px-4 py-1 rounded"
               >
-                OK
+                {isLoading ? "Wait.." : "OK"}
               </button>
             </div>
           </div>

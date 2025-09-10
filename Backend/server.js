@@ -9,6 +9,7 @@ const user = require('./Routes/user')
 const { router: agoraa, startTokenCron } = require("./Routes/agoraa");
 const app = express();
 const meetingAttendance = require('./Routes/meetingAttendance')
+const removedUser = require('./Routes/removedUser')
 
 
 app.use(cors({
@@ -54,6 +55,7 @@ async function initializeApp() {
     // app.use('/api/agora',agora)
     app.use('/api/agora',agoraa)
      app.use('/api/attendance',meetingAttendance)
+     app.use('/api/removeduser',removedUser)
 
 
     
