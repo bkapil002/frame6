@@ -890,9 +890,9 @@ const CreateMeeting = () => {
                                   ? "bottom-full "
                                   : "top-full "
                               } w-48 bg-gray-100 shadow-lg rounded-lg p-3 z-50 
-  opacity-0 group-hover:opacity-100 transition-opacity duration-200 
-  pointer-events-none group-hover:pointer-events-auto 
-  ${j === daysArr.length - 1 ? "right-0" : "left-0"}`}
+                               opacity-0 group-hover:opacity-100 transition-opacity duration-200 
+                               pointer-events-none group-hover:pointer-events-auto 
+                              ${j === daysArr.length - 1 ? "right-0" : "left-0"}`}
                             >
                               <h4 className="text-sm font-semibold text-gray-800">
                                 {meeting.meetingType}
@@ -904,7 +904,7 @@ const CreateMeeting = () => {
                               <div className="flex gap-2">
                                 <Link
                                   to={`/room/${meeting.linkId}`}
-                                  className="flex-1 bg-gradient-to-r  bg-[#178a43]  hover:bg-[#000080]  text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 hover:shadow-md transform hover:scale-105 active:scale-95"
+                                  className="flex-1 bg-gradient-to-r  bg-[#178a43]  hover:bg-[#000080]  text-white flex justify-center items-center py-2 rounded-lg text-[12px] transition-all duration-200 hover:shadow-md transform hover:scale-105 active:scale-95"
                                 >
                                   Join Meeting
                                 </Link>
