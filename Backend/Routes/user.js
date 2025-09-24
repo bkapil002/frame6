@@ -38,7 +38,12 @@ router.post('/signUp',upload.array('images'), async (req, res) => {
         }
 
         const user = await User.create({ email, name , imageUrls});
-
+         console.log("✅ User stored successfully:", {
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      images: user.imageUrls,
+    });
         const token = generateToken(user._id);
         res.cookie('token',token,cookiConfig)
 
@@ -59,9 +64,9 @@ router.post('/signUp',upload.array('images'), async (req, res) => {
 });
 
 
-router.post('/login', async(req,res)=>{
+router.get('/auth/:email', async(req,res)=>{
     try{
-       const {email }= req.body;
+       const { email } = req.params; 
        const user = await User.findOne({email});
 
        if(!user){

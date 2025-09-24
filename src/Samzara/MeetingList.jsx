@@ -75,7 +75,7 @@ const MeetingList = () => {
     const currentTimeInMinutes = currentHours * 60 + currentMinutes;
 
     return (
-      currentTimeInMinutes >= meetingTimeInMinutes &&
+      currentTimeInMinutes >= meetingTimeInMinutes - 6 &&
       currentTimeInMinutes <= meetingTimeInMinutes + 57
     );
   };
@@ -94,7 +94,7 @@ const MeetingList = () => {
   const fetchRooms = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/agora/all-rooms", {
-        headers: { Authorization: `Bearer ${user.token}` },
+        headers: {Authorization: `Bearer ${user.token}`},
       });
       setRooms(res.data);
     } catch (err) {
@@ -105,11 +105,9 @@ const MeetingList = () => {
   useEffect(() => {
     if (!user) return;
     fetchRooms();
-
     const interval = setInterval(() => {
       fetchRooms();
     }, 2000);
-
     return () => clearInterval(interval);
   }, [user]);
 
@@ -123,7 +121,10 @@ const MeetingList = () => {
   });
 
   const upcomingMeetings = todayMeetings
-    .filter((room) => isMeetingUpcoming(room.meetingTime))
+    .filter((room) => {
+  
+    return isMeetingUpcoming(room.meetingTime) && !isMeetingLive(room.meetingTime);
+  })
     .sort((a, b) => {
       const timeA = convertTo24Hour(a.meetingTime);
       const timeB = convertTo24Hour(b.meetingTime);
@@ -165,7 +166,7 @@ const MeetingList = () => {
   };
 
   return (
-    <div className=" mb-4">
+    <div className=" mb-4 mt-3.5">
       <div className="px-4 pt-2">
         <div className="w-full bg-[#f89939] rounded-md shadow-sm py-5 text-center">
           <h2 className="text-white text-xl md:text-2xl font-bold ">
@@ -256,7 +257,7 @@ const MeetingList = () => {
                         to={`/room/${meeting.linkId}`}
                         className="bg-[#272977] hover:bg-[#178a43] text-white px-3 py-1 rounded text-sm font-medium transition-colors"
                       >
-                        Join
+                        Details 
                       </Link>
                     </div>
                   ))}

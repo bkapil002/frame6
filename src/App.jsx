@@ -14,6 +14,7 @@ import Footer from "./components/Footer";
 import { Toaster } from 'react-hot-toast';
 import ProtectedRoute from "./context/ProtectedRoute";
 import Dashboard from "./components/Dashboard";
+import AttendanceNavigate from "./components/AttendanceNavigate";
 
 function App() {
 
@@ -39,15 +40,16 @@ function App() {
             {/* Page Content */}
             <div className="flex-1">
               <Routes>
-                <Route path="/:name" element={<Dashboard />} />
+                <Route path="/:email" element={<Dashboard />} />
                 <Route path="/signin" element={<SignIn />} />
+                <Route path="/user-attendance" element={<AttendanceNavigate/>}/>
                 {/* <Route path="/signin" element={<Navigate to="https://community.samzara.in/" replace />} /> */}
                 <Route path="/signup" element={<SignUp />} />
 
                   <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                   <Route path="/join" element={<ProtectedRoute><CreateMeeting /></ProtectedRoute>} />
                   <Route path="/room/:linkId" element={<ProtectedRoute><Frame /></ProtectedRoute>} />
-                  <Route path="/mleetingList" element={<ProtectedRoute><MeetingList /></ProtectedRoute>} />
+                  <Route path="/meetingList" element={<ProtectedRoute><MeetingList /></ProtectedRoute>} />
                   <Route path="/attendance" element={<ProtectedRoute><AttendanceRequests /></ProtectedRoute>} />
               </Routes>
             </div>
