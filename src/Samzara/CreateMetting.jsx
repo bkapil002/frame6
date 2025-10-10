@@ -862,8 +862,14 @@ const CreateMeeting = () => {
                           onClick={() => {
                             setStartDate(day.toDate());
                             setSelectedSlot(slot);
-                          }}
-                        >
+                             const contentDiv = document.querySelector('.overflow-y-auto');
+                             if (contentDiv) {
+                            contentDiv.scrollTo({
+                             top: 0,
+                             behavior: 'smooth',
+                              });
+                              }
+                            }} >
                           {meeting && (
                             <div className="absolute inset-0 overflow-hidden">
                               <div className="bg-[#178a43] hover:bg-[#000080] flex flex-col text-white w-full h-full  p-1 truncate">
@@ -913,9 +919,7 @@ const CreateMeeting = () => {
                                     onClick={() => {
                                       if (navigator.share) {
                                         navigator
-                                          .share({
-                                            title: "Join My Meeting",
-                                            text: `Join this meeting: ${
+                                          .share({  title: "Join My Meeting",  text: `Join this meeting: ${
                                               meeting.meetingType
                                             } on ${new Date(
                                               meeting.meetingDate
@@ -934,24 +938,13 @@ const CreateMeeting = () => {
                                     className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2 rounded-lg text-xs transition-all duration-200 hover:shadow-sm transform hover:scale-105 active:scale-95"
                                     title="Share meeting"
                                   >
-                                    <svg
-                                      className="w-3 h-3"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor"  viewBox="0 0 24 24" >
+                                      <path  strokeLinecap="round"   strokeLinejoin="round"  strokeWidth={2}  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
                                       />
                                     </svg>
                                   </button>
                                   <button
-                                    onClick={() => {
-                                      setSelectedRoom(meeting);
-                                      setShowModal(true);
+                                    onClick={() => { setSelectedRoom(meeting);  setShowModal(true);
                                     }}
                                     className="bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 p-2 rounded-lg text-xs transition-all duration-200 hover:shadow-sm transform hover:scale-105 active:scale-95"
                                     title="Delete meeting"
@@ -962,9 +955,8 @@ const CreateMeeting = () => {
                                       stroke="currentColor"
                                       viewBox="0 0 24 24"
                                     >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
+                                      <path strokeLinecap="round"
+                                       strokeLinejoin="round"
                                         strokeWidth={2}
                                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                                       />

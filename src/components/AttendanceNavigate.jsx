@@ -39,8 +39,8 @@ export default function AttendanceNavigate() {
       } catch (err) {
         console.error(err);
         setError(err.message || "Something went wrong");
-        navigate("https://community.samzara.in");
-        window.location.href = "https://community.samzara.in";
+        // navigate("https://community.samzara.in");
+        // window.location.href = "https://community.samzara.in";
       } finally {
         setLoading(false);
       }

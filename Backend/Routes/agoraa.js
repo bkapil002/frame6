@@ -9,7 +9,8 @@ const appId = process.env.APP_ID;
 const appCertificate = process.env.APP_CERTIFICATE;
 const cron = require("node-cron");
 const dayjs = require('dayjs');
-
+const emailServer = require('../Emailserver/emailServer')
+const createMettingTemplate  = require('../MailTemplate/createMettingTemplate')
 
 async function refreshTokens() {
   // try {
@@ -174,8 +175,15 @@ router.post('/create-room', auth, async (req, res) => {
       });
 
       meetingsToCreate.push(agora);
-    }
 
+    }
+        const subject = `You joined a meeting: ${meetingType}`;
+           const html = createMettingTemplate(
+        req.user.name,
+        meetingType,
+        `https://samzra.onrender.com/room/${meetingsToCreate[0].linkId}` // meeting link
+        );
+      await emailServer.sendEmail(req.user.email, subject, html);
     return res.status(200).json({
       meetings: meetingsToCreate
     });

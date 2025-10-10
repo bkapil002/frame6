@@ -54,7 +54,7 @@ const SideBar = () => {
         <ul className="text-gray-700">
           {[
             {
-              to: "https://community.samzara.in",
+              to: "/",
               icon: "ri-home-2-line",
               text: "Home",
             },

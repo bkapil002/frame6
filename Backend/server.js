@@ -10,7 +10,7 @@ const { router: agoraa, startTokenCron } = require("./Routes/agoraa");
 const app = express();
 const meetingAttendance = require('./Routes/meetingAttendance')
 const removedUser = require('./Routes/removedUser')
-
+const {auth} = require('./middleware/auth')
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
@@ -57,7 +57,15 @@ async function initializeApp() {
      app.use('/api/attendance',meetingAttendance)
      app.use('/api/removeduser',removedUser)
 
-
+   app.get("/api/tokenEXP", auth, (req, res) => {
+    res.json({
+     message: "This is a protected route",
+     user: req.user,
+    iat: req.jwtInfo.iat,
+    exp: req.jwtInfo.exp
+    });
+   });
+    
     
     // Health check route
     app.get('/health', (req, res) => {

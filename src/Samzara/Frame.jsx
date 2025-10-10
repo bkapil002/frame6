@@ -47,7 +47,7 @@ const Basics = () => {
   const { localCameraTrack } = useLocalCameraTrack(cameraOn);
   const [email, setEmail] = useState("");
   const [admin, setAdmin] = useState("");
-  const [adminImage, setAdminImage] = useState([]);
+  const [adminImage, setAdminImage] = useState(null);
   const [names, setNames] = useState({});
   const [pushedUids, setPushedUids] = useState([]);
   const [pushLoading, setPushLoading] = useState(false);
@@ -55,7 +55,7 @@ const Basics = () => {
   const [promotedUid, setPromotedUid] = useState(null);
   const [promoteLoading, setPromoteLoading] = useState(false);
   const [meetingTime, setMeetingTime] = useState("");
-  const [meetingDate , setMeetingDate] =useState("")
+  const [meetingDate, setMeetingDate] = useState("");
   const [adminName, setAdminName] = useState("");
   const [meetingtopic, setMeetingtopic] = useState("");
   const [meetingDescription, setMeetingDescription] = useState("");
@@ -63,6 +63,7 @@ const Basics = () => {
   const [showModal, setShowModal] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [removeUser, setRemoveUser] = useState([]);
+  const [loading , setloading]= useState(false)
   const remoteUsers = useRemoteUsers();
 
   useEffect(() => {
@@ -260,7 +261,9 @@ const Basics = () => {
 
   useEffect(() => {
     if (!user || !linkId) return;
+   
     const fetchRoomDetails = async () => {
+       setloading(true)
       try {
         const response = await axios.put(
           `http://localhost:5000/api/agora/join-room/${linkId}`,
@@ -277,15 +280,16 @@ const Basics = () => {
         setAppId(data.agora.appId);
         setEmail(user.email);
         setAdmin(data.agora.user.email);
-        setAdminImage(data.agora.user.imageUrls);
         setMeetingTime(data.agora.meetingTime);
-        setMeetingDate(data.agora.meetingDate)
+        setMeetingDate(data.agora.meetingDate);
         setMeetingtopic(data.agora.meetingType);
         setMeetingDescription(data.agora.meetingDescription);
         setAdminName(data.agora.user.name);
       } catch (error) {
         console.error("Error fetching room details:", error);
-      }
+      } finally {
+      setloading(false); // ✅ Stop loading in both success & error cases
+    }
     };
     fetchRoomDetails();
   }, [user, linkId]);
@@ -467,6 +471,26 @@ const Basics = () => {
       ? null
       : remoteUsers.find((user) => user.uid === promotedUid);
 
+
+  useEffect(() => {
+    fetch("https://community.samzara.in/getUserByEmail.php", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        email: admin ,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.api_status === 200 && data.user_data?.avatar) {
+          setAdminImage(`https://community.samzara.in/${data.user_data.avatar}`);
+        }
+      })
+      .catch((err) => console.error("Error:", err));
+  }, [admin]);
+
   return (
     <div className="flex overflow-hidden">
       <div
@@ -483,6 +507,7 @@ const Basics = () => {
               meetingtopic={meetingtopic}
               meetingTime={meetingTime}
               meetingDate={meetingDate}
+              loading = {loading}
             />
           </div>
         ) : (
@@ -524,9 +549,8 @@ const Basics = () => {
                     <div className="flex justify-center items-center w-full h-40 sm:h-48 md:h-56 lg:h-60">
                       <img
                         src={
-                          adminImage && adminImage.length > 0
-                            ? adminImage[0]
-                            : "https://community.samzara.in/upload/photos/d-avatar.jpg?cache=0"
+                          adminImage ||
+                            "https://community.samzara.in/upload/photos/d-avatar.jpg?cache=0"
                         }
                         alt="Chairperson"
                         className="w-28 h-38 rounded-[4px] object-cover lg:w-full lg:h-full lg:rounded-none"
