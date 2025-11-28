@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { X, Menu } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const SideBar = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+const SideBar = ({sidebarOpen,setSidebarOpen}) => {
+
   const sidebarRef = useRef(null);
   useEffect(() => {
     function handleClickOutside(event) {
@@ -25,15 +25,7 @@ const SideBar = () => {
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <div className="fixed top-16  bg-[#f0f2f5 ]  md:hidden ">
-        <button
-          className=" bg-gray-200 rounded-[3px] py-1 px-1"
-          onClick={() => setSidebarOpen(true)}
-        >
-          <Menu size={24} />
-        </button>
-      </div>
+      
 
       {/* Sidebar */}
       <div

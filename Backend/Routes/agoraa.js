@@ -475,4 +475,53 @@ router.get('/promote-uid/:roomId', auth, async (req, res) => {
   }
 });
 
+
+
+
+router.post('/allmeeting', async (req, res) => {
+    try {
+        const meetings = await Agora.find().sort({ createdAt: -1 }); // latest first
+
+        res.status(200).json({
+            success: true,
+            total: meetings.length,
+            data: meetings
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch meetings",
+            error: error.message
+        });
+    }
+});
+
+router.delete('/meetingdelete/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const deletedMeeting = await Agora.findByIdAndDelete(id);
+
+        if (!deletedMeeting) {
+            return res.status(404).json({
+                success: false,
+                message: "Meeting not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Meeting deleted successfully",
+            deleted: deletedMeeting
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error deleting meeting",
+            error: error.message
+        });
+    }
+});
+
 module.exports = { router, startTokenCron };

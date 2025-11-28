@@ -1,94 +1,36 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Compressor from "compressorjs";
-import { X, Plus } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function SignUp() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [images, setImages] = useState([]);
-  const [imagePreviews, setImagePreviews] = useState([]);
 
-  const handleImageChange = (e) => {
-    if (!e.target.files) return;
-    const files = Array.from(e.target.files);
-    if (files.length + images.length > 1) {
-      alert("Maximum 1 image allowed");
-      return;
+
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const response = await fetch(`http://localhost:5000/api/users/signUp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email }),
+      credentials: "include",
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to register");
     }
-    const newPreviews = files.map((file) => URL.createObjectURL(file));
-    setImagePreviews((prev) => [...prev, ...newPreviews]);
-    setImages((prev) => [...prev, ...files]);
-  };
 
-  const removeImage = (index) => {
-    const newImages = images.filter((_, i) => i !== index);
-    const newPreviews = imagePreviews.filter((_, i) => i !== index);
-    URL.revokeObjectURL(imagePreviews[index]);
-    setImages(newImages);
-    setImagePreviews(newPreviews);
-  };
-
-  const compressImages = (images) => {
-    return Promise.all(
-      images.map(
-        (image) =>
-          new Promise((resolve, reject) => {
-            new Compressor(image, {
-              quality: 0.6,
-              success(result) {
-                resolve({
-                  url: URL.createObjectURL(result),
-                  file: result,
-                });
-              },
-              error(err) {
-                reject(err);
-              },
-            });
-          })
-      )
-    );
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    try {
-      const compressedImages = await compressImages(images);
-      const formData = new FormData();
-      formData.append("name", name);
-      formData.append("email", email);
-
-      compressedImages.forEach((image) => {
-        formData.append("images", image.file);
-      });
-
-      const response = await fetch(`http://localhost:5000/api/users/signUp`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to register");
-      }
-
-      const data = await response.json();
-      if (data.success || response.ok) {
-        toast.success("Sign up successful!");
-        navigate("/signin");
-      } else {
-        toast.error(data.message || "Registration failed");
-      }
-    } catch (error) {
-      console.error("Error signing up:", error);
-      toast.error(error.message || "An error occurred during registration");
-    }
-  };
+    toast.success("Sign up successful!");
+    navigate("/signin");
+  } catch (error) {
+    console.error("Error signing up:", error);
+    toast.error(error.message || "An error occurred during registration");
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br  px-4">
@@ -102,43 +44,6 @@ export default function SignUp() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Image Upload */}
-          <div className="flex justify-center">
-            {imagePreviews.length > 0 ? (
-              imagePreviews.map((preview, index) => (
-                <div
-                  key={index}
-                  className="relative w-24 h-24 rounded-full overflow-hidden border border-gray-200 shadow-md"
-                >
-                  <img
-                    src={preview}
-                    alt={`Preview ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full shadow hover:bg-red-600 transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ))
-            ) : (
-              <label className="w-24 h-24 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-full cursor-pointer hover:border-blue-500 transition-colors shadow-sm">
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-                <Plus className="h-6 w-6 text-gray-400" />
-                <span className="text-xs text-gray-500">Add Image</span>
-              </label>
-            )}
-          </div>
-
           {/* Name Input */}
           <div>
             <label
@@ -190,7 +95,7 @@ export default function SignUp() {
 
         {/* Footer */}
         <p className="mt-6 text-center text-sm text-gray-600">
-          if you Already Registered?{" "}
+          If you Already Registered?{" "}
           <Link
             to="/signin"
             className="text-blue-600 hover:text-blue-700 font-medium transition-colors"

@@ -83,5 +83,55 @@ router.delete('/delete-attendance/:linkId', auth, async (req, res) => {
 });
 
 
+router.post('/allRemovedUser', async (req, res) => {
+    try {
+        const removedUsers = await RemovedUser
+            .find()
+            .sort({ createdAt: -1 }); // latest first
+
+        res.status(200).json({
+            success: true,
+            total: removedUsers.length,
+            data: removedUsers
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch removed users",
+            error: error.message
+        });
+    }
+});
+
+
+router.delete('/deleteRemovedUser/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const deletedUser = await RemovedUser.findByIdAndDelete(id);
+
+        if (!deletedUser) {
+            return res.status(404).json({
+                success: false,
+                message: "Removed user not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Removed user deleted successfully",
+            deleted: deletedUser
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error deleting removed user",
+            error: error.message
+        });
+    }
+});
+
 
 module.exports = router;

@@ -15,19 +15,22 @@ import { Toaster } from 'react-hot-toast';
 import ProtectedRoute from "./context/ProtectedRoute";
 import Dashboard from "./components/Dashboard";
 import AttendanceNavigate from "./components/AttendanceNavigate";
+import UserList from "./components/UserList";
+import MeetingDashboard from "./components/MeetingDashboard";
+import { useState } from "react";
 
 function App() {
-
+ const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
 
    <AuthProvider>
       <Router>
-        <Navebar />
+        <Navebar  setSidebarOpen={setSidebarOpen}  />
         <div className="h-screen w-full  justify-center flex overflow-hidden">
           <div className=" flex  w-320 2xl:w-295 overflow-hidden" >
           <div className="">
-            <SideBar />
+            <SideBar  sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
           </div>
           <div className="flex-1 flex flex-col overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <style>
@@ -42,6 +45,8 @@ function App() {
               <Routes>
                 <Route path="/:email" element={<Dashboard />} />
                 <Route path="/signin" element={<SignIn />} />
+                <Route path="/UserList" element={<UserList />} />
+                <Route path="/MeetingD" element={<MeetingDashboard />} />
                 <Route path="/user-attendance" element={<AttendanceNavigate/>}/>
                 {/* <Route path="/signin" element={<Navigate to="https://community.samzara.in/" replace />} /> */}
                 <Route path="/signup" element={<SignUp />} />
@@ -57,10 +62,8 @@ function App() {
             {/* Footer always at bottom */} 
             
           </div>
-           <Toaster  position="top-center" reverseOrder={false} />
-           
-           </div>
-           
+           <Toaster  position="top-center" reverseOrder={false} />     
+           </div> 
         </div>
         <Footer />
       </Router>
@@ -69,3 +72,4 @@ function App() {
 }
 
 export default App
+

@@ -124,5 +124,53 @@ router.get('/meeting/attendance/:meetingId', auth, async (req, res) => {
 });
 
 
+router.post('/allattendance', async (req, res) => {
+    try {
+        const attendance = await MeetingAttendance
+            .find()
+            .sort({ createdAt: -1 }); // latest first
+
+        res.status(200).json({
+            success: true,
+            total: attendance.length,
+            data: attendance
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch attendance data",
+            error: error.message
+        });
+    }
+});
+
+router.delete('/deleteattendance/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const deleted = await MeetingAttendance.findByIdAndDelete(id);
+
+        if (!deleted) {
+            return res.status(404).json({
+                success: false,
+                message: "Attendance record not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Attendance deleted successfully",
+            deleted: deleted
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Error deleting attendance",
+            error: error.message
+        });
+    }
+});
 
 module.exports = router;

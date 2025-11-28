@@ -21,13 +21,9 @@ router.post('/signUp', async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: 'Email already registered' });
         }
-        
+            
+
         const user = await User.create({ email, name });
-         console.log("✅ User stored successfully:", {
-      id: user._id.toString(),
-      email: user.email,
-      name: user.name,
-    });
         const token = generateToken(user._id);
         res.cookie('token',token,cookiConfig)
 
@@ -39,11 +35,13 @@ router.post('/signUp', async (req, res) => {
                 name: user.name,
             }
         });
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
 
 router.post('/login', async(req,res)=>{
     try{
@@ -129,6 +127,77 @@ router.get('/me',auth,async(req,res)=>{
     res.status(500).json({error: error.message});
   }
 })
+
+router.post('/alluser', async (req, res) => {
+  try {
+    // Fetch all users and select only name, email, and timestamps
+    const users = await User.find({}, 'name email createdAt updatedAt').sort({ createdAt: -1 });
+
+    res.status(200).json({
+      count: users.length,
+      users
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.put('/updateuser/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email } = req.body;
+
+    // Check if at least one field is provided
+    if (!name && !email) {
+      return res.status(400).json({ message: 'Please provide name or email to update.' });
+    }
+
+    // Update the user
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { name, email },
+      { new: true, runValidators: true }
+    ).select('name email createdAt updatedAt');
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      message: 'User updated successfully',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.delete('/deleteuser/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedUser = await User.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({
+      message: 'User deleted successfully',
+      deletedUser: {
+        _id: deletedUser._id,
+        name: deletedUser.name,
+        email: deletedUser.email,
+        createdAt: deletedUser.createdAt,
+      }
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 router.post('/logOut',(req,res)=>{
   res.clearCookie('token',{

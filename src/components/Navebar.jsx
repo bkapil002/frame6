@@ -4,14 +4,15 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Search } from "lucide-react";
 import toast from "react-hot-toast";
+import { Menu } from "lucide-react";
 
-export default function Navebar() {
+export default function Navebar({setSidebarOpen }) {
   const { isAuthenticated, logout, user } = useAuth();
   const [showPopup, setShowPopup] = useState(false);
   const [showPopup2, setShowPopup2] = useState(false);
   const [query, setQuery] = useState("");
   const popupRef = useRef(null);
-  const popupRef2 =useRef(null)
+  const popupRef2 = useRef(null);
   const [avatarUrl, setAvatarUrl] = useState(null);
   const logoutTimerRef = useRef(null);
 
@@ -109,30 +110,37 @@ export default function Navebar() {
     };
   }, [user?.token]);
 
-useEffect(() => {
-  const handleClickOutside = (e) => {
-    if (popupRef.current && !popupRef.current.contains(e.target)) setShowPopup(false);
-    if (popupRef2.current && !popupRef2.current.contains(e.target)) setShowPopup2(false);
-  };
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, [showPopup, showPopup2]);
-
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (popupRef.current && !popupRef.current.contains(e.target))
+        setShowPopup(false);
+      if (popupRef2.current && !popupRef2.current.contains(e.target))
+        setShowPopup2(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showPopup, showPopup2]);
 
   return (
     <nav className=" bg-[#ededed] shadow-sm py-[16px]">
       <div className=" flex pl-6 pr-6 justify-center">
         <div className="flex w-[1120px] items-center  justify-between">
-          <Link
-            to={"https://community.samzara.in"}
-            className="flex items-center "
-          >
-            <img
-              src={Z}
-              alt="Logo"
-              className=" w-30  md:w-[180px] cursor-pointer  object-cover"
-            />
-          </Link>
+          <div className="flex justify-center items-center gap-2  ">
+            <button className="md:hidden " onClick={() => setSidebarOpen(true)}>
+              <Menu size={21} />
+            </button>
+
+            <Link
+              to={"https://community.samzara.in"}
+              className="flex items-center "
+            >
+              <img
+                src={Z}
+                alt="Logo"
+                className=" w-35  md:w-[180px] cursor-pointer  object-cover"
+              />
+            </Link>
+          </div>
 
           {/* Center - Navigation Icons (Desktop only) */}
           <div className=" hidden md:flex justify-center items-center  ">
@@ -149,7 +157,7 @@ useEffect(() => {
           </div>
 
           {/* Right - Action Icons (Desktop) */}
-          <div className=" flex  items-center gap-4.5">
+          <div className=" flex  items-center gap-3.5">
             {!isAuthenticated ? (
               <div className=" flex gap-4.5">
                 <div className="relative">
@@ -254,7 +262,10 @@ useEffect(() => {
                     }}
                   />
                   {showPopup && (
-                    <div ref={popupRef} className="absolute shadow-xl -right-5 -mt-[43px] w-[250px] h-[120px] bg-white rounded-lg z-50 hidden md:block">
+                    <div
+                      ref={popupRef}
+                      className="absolute shadow-xl -right-5 -mt-[43px] w-[250px] h-[120px] bg-white rounded-lg z-50 hidden md:block"
+                    >
                       <div className="px-2 py-4 border-b border-gray-200 text-black text-[14px] font-semibold">
                         <Link
                           to={`https://community.samzara.in/${user.name}`}
@@ -288,7 +299,10 @@ useEffect(() => {
           </div>
         </div>
         {showPopup2 && (
-          <div ref={popupRef2} className="fixed top-13.5 sm:right-3   overflow-y-auto w-full sm:w-62  bg-white z-50 block md:hidden animate-slide-in rounded-[4px]">
+          <div
+            ref={popupRef2}
+            className="fixed top-13.5 sm:right-3   overflow-y-auto w-full sm:w-62  bg-white z-50 block md:hidden animate-slide-in rounded-[4px]"
+          >
             {/* Close Button */}
             <div className="flex justify-between items-center p-4 px-2">
               <div className="w-full   border-gray-200 text-black text-[14px] ">
