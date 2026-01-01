@@ -5,7 +5,7 @@ const User = require('../Modal/User');
 const {generateToken} = require('../ultils/tokenUtils')
 const cookiConfig =require('../ultils/cookieConfig')
 const {auth} = require('../middleware/auth')
-
+const multer = require("multer");
 
 router.post('/signUp', async (req, res) => {
   console.log(req.body); 
@@ -131,7 +131,7 @@ router.get('/me',auth,async(req,res)=>{
 router.post('/alluser', async (req, res) => {
   try {
     // Fetch all users and select only name, email, and timestamps
-    const users = await User.find({}, 'name email createdAt updatedAt').sort({ createdAt: -1 });
+    const users = await User.find().sort({ createdAt: -1 });
 
     res.status(200).json({
       count: users.length,
@@ -207,6 +207,68 @@ router.post('/logOut',(req,res)=>{
   }).json({message:'logged out successfully'})
  
 })
+
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Upload & store users
+router.post("/upload-json", upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    // Parse JSON file
+    let jsonData;
+    try {
+      jsonData = JSON.parse(req.file.buffer.toString());
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid JSON format" });
+    }
+
+    // Ensure it's an array
+    if (!Array.isArray(jsonData)) {
+      return res.status(400).json({ error: "JSON must be an array of users" });
+    }
+
+    let inserted = 0;
+    let skipped = 0;
+
+    for (const u of jsonData) {
+      const transformed = {
+        _id: u._id?.$oid,
+        name: u.name,
+        email: u.email,
+        createdAt: u.createdAt?.$date ? new Date(u.createdAt.$date) : new Date(),
+        updatedAt: u.updatedAt?.$date ? new Date(u.updatedAt.$date) : new Date(),
+        __v: u.__v ?? 0
+      };
+
+      // Skip duplicates based on email
+      const existing = await User.findOne({ email: transformed.email });
+      if (existing) {
+        skipped++;
+        continue;
+      }
+
+      await User.create(transformed);
+      inserted++;
+    }
+
+    res.json({
+      message: "Upload Completed",
+      inserted,
+      skipped,
+      total: jsonData.length
+    });
+
+  } catch (error) {
+    console.error("Upload error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
 
 
 module.exports = router

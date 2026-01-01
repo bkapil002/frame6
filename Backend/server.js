@@ -12,6 +12,8 @@ const meetingAttendance = require('./Routes/meetingAttendance')
 const removedUser = require('./Routes/removedUser')
 const {auth} = require('./middleware/auth')
 
+
+
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? process.env.CLIENT_URL 
@@ -82,6 +84,8 @@ async function initializeApp() {
       console.log(`Server running on port ${PORT} - Worker PID: ${process.pid}`);
       console.log(`Health check available at http://localhost:${PORT}/health`);
       startTokenCron();
+
+      
     });
   } catch (error) {
     console.error('Initialization error:', error.message);

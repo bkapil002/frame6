@@ -19,7 +19,7 @@ const UserList = () => {
         withCredentials: true,
       });
       // Sort users alphabetically by name (case-insensitive)
-      const sortedUsers = (res.data.users || []).sort((a, b) => 
+      const sortedUsers = (res.data.users || []).sort((a, b) =>
         a.name.toLowerCase().localeCompare(b.name.toLowerCase())
       );
       setUsers(sortedUsers);
@@ -89,11 +89,59 @@ const UserList = () => {
     });
   };
 
+  const handleJsonUpload = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = async (event) => {
+    try {
+      const jsonData = JSON.parse(event.target.result);
+
+      if (!Array.isArray(jsonData)) {
+        alert("JSON must be an array of users.");
+        return;
+      }
+
+      // Create FormData to send file to backend
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await axios.post(
+          "http://localhost:5000/api/users/upload-json",
+          formData,
+          { 
+            headers: { "Content-Type": "multipart/form-data" },
+            withCredentials: true
+          }
+        );
+
+        alert(
+          `Upload Completed! Inserted: ${res.data.inserted}, Skipped: ${res.data.skipped}`
+        );
+        fetchUsers(); // reload the user list
+      } catch (apiErr) {
+        console.error(apiErr);
+        alert("Failed to upload JSON. Please check the backend.");
+      }
+    } catch (err) {
+      alert("Invalid JSON file.");
+    }
+  };
+
+  reader.readAsText(file);
+};
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-t-transparent" style={{ borderColor: '#2A2A72', borderTopColor: 'transparent' }}></div>
+          <div
+            className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-t-transparent"
+            style={{ borderColor: "#2A2A72", borderTopColor: "transparent" }}
+          ></div>
           <p className="mt-4 text-gray-600 font-medium">Loading users...</p>
         </div>
       </div>
@@ -105,15 +153,74 @@ const UserList = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg" style={{ backgroundColor: '#2A2A72' }}>
-              <Users className="text-white" size={28} />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="p-3 rounded-lg"
+                style={{ backgroundColor: "#2A2A72" }}
+              >
+                <Users className="text-white" size={28} />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">
+                  User Management
+                </h1>
+                <p className="text-gray-500 mt-1">
+                  Manage and edit user information
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">User Management</h1>
-              <p className="text-gray-500 mt-1">Manage and edit user information</p>
-            </div>
+
+            {/* Download JSON Button */}
+            <button
+              onClick={() => {
+                // Convert users to MongoDB export format
+                const formatted = users.map((u) => ({
+                  _id: { $oid: u._id },
+                  name: u.name,
+                  email: u.email,
+                  createdAt: { $date: u.createdAt },
+                  updatedAt: { $date: u.updatedAt },
+                  __v: u.__v ?? 0,
+                }));
+
+                const fileData = JSON.stringify(formatted, null, 2);
+                const blob = new Blob([fileData], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = "users_mongo_format.json";
+                link.click();
+
+                URL.revokeObjectURL(url);
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200"
+            >
+              Download JSON
+            </button>
+
+            <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md transition-colors duration-200 ml-2">
+  Upload JSON
+  <input
+    type="file"
+    accept="application/json"
+    className="hidden"
+    onChange={handleJsonUpload}
+  />
+</label>
           </div>
+
+          {users.length > 0 && (
+            <div className="bg-gray-50 py-2 border-t border-gray-200 mt-4">
+              <p className="text-gray-600 text-sm">
+                Total Users:{" "}
+                <span className="font-semibold text-gray-800">
+                  {users.length}
+                </span>
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Error Message */}
@@ -129,12 +236,21 @@ const UserList = () => {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-white" style={{ background: 'linear-gradient(to right, #2A2A72, #1f1f58)' }}>
+                <tr
+                  className="text-white"
+                  style={{
+                    background: "linear-gradient(to right, #2A2A72, #1f1f58)",
+                  }}
+                >
                   <th className="py-4 px-6 text-left font-semibold">#</th>
                   <th className="py-4 px-6 text-left font-semibold">Name</th>
                   <th className="py-4 px-6 text-left font-semibold">Email</th>
-                  <th className="py-4 px-6 text-left font-semibold">Created At</th>
-                  <th className="py-4 px-6 text-center font-semibold">Actions</th>
+                  <th className="py-4 px-6 text-left font-semibold">
+                    Created At
+                  </th>
+                  <th className="py-4 px-6 text-center font-semibold">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -155,11 +271,13 @@ const UserList = () => {
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
                           className="border-2 outline-none px-3 py-2 rounded-lg w-full transition-colors"
-                          style={{ borderColor: '#2A2A72' }}
+                          style={{ borderColor: "#2A2A72" }}
                           placeholder="Enter name"
                         />
                       ) : (
-                        <span className="text-gray-800 font-medium">{user.name}</span>
+                        <span className="text-gray-800 font-medium">
+                          {user.name}
+                        </span>
                       )}
                     </td>
 
@@ -171,7 +289,7 @@ const UserList = () => {
                           value={editEmail}
                           onChange={(e) => setEditEmail(e.target.value)}
                           className="border-2 outline-none px-3 py-2 rounded-lg w-full transition-colors"
-                          style={{ borderColor: '#2A2A72' }}
+                          style={{ borderColor: "#2A2A72" }}
                           placeholder="Enter email"
                         />
                       ) : (
@@ -207,9 +325,15 @@ const UserList = () => {
                             <button
                               onClick={() => handleEdit(user)}
                               className="text-white p-2 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg"
-                              style={{ backgroundColor: '#2A2A72' }}
-                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1f1f58'}
-                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2A2A72'}
+                              style={{ backgroundColor: "#2A2A72" }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#1f1f58")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#2A2A72")
+                              }
                               title="Edit user"
                             >
                               <Pencil size={18} />
@@ -242,15 +366,6 @@ const UserList = () => {
               </tbody>
             </table>
           </div>
-
-          {/* Footer */}
-          {users.length > 0 && (
-            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-              <p className="text-gray-600 text-sm">
-                Total Users: <span className="font-semibold text-gray-800">{users.length}</span>
-              </p>
-            </div>
-          )}
         </div>
       </div>
     </div>

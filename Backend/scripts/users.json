@@ -1,0 +1,72 @@
+[
+  {
+    "_id": {
+      "$oid": "6915855f2518d1184a7d874b"
+    },
+    "name": "Brahm",
+    "email": "sita@gmail.com",
+    "createdAt": {
+      "$date": "2025-11-13T07:14:39.331Z"
+    },
+    "updatedAt": {
+      "$date": "2025-11-13T07:14:39.331Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "69157646a4a049a555f98915"
+    },
+    "name": "Brahm",
+    "email": "raamm@gmail.com",
+    "createdAt": {
+      "$date": "2025-11-13T06:10:14.795Z"
+    },
+    "updatedAt": {
+      "$date": "2025-11-13T06:10:14.795Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "691585562518d1184a7d8748"
+    },
+    "name": "brahm kapil",
+    "email": "kapilabrahm@gmail.com",
+    "createdAt": {
+      "$date": "2025-11-13T07:14:30.120Z"
+    },
+    "updatedAt": {
+      "$date": "2025-11-13T07:14:30.120Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "6915856d2518d1184a7d874f"
+    },
+    "name": "kapil",
+    "email": "kapilabrahm7@gmail.com",
+    "createdAt": {
+      "$date": "2025-11-13T07:14:53.785Z"
+    },
+    "updatedAt": {
+      "$date": "2025-11-13T07:14:53.785Z"
+    },
+    "__v": 0
+  },
+  {
+    "_id": {
+      "$oid": "6915764da4a049a555f98918"
+    },
+    "name": "sita",
+    "email": "sitaa@gmail.com",
+    "createdAt": {
+      "$date": "2025-11-13T06:10:21.876Z"
+    },
+    "updatedAt": {
+      "$date": "2025-11-13T06:10:21.876Z"
+    },
+    "__v": 0
+  }
+]
